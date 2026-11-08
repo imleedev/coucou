@@ -359,7 +359,7 @@ body {
   isolation:isolate;
   border:1px solid rgba(255,255,255,.09);
   border-radius:16px;
-  background:rgba(11,13,18,.2);
+  background:#0b0d12;
   color:#f5f4f8;
 }
 .music-color-grid { position:absolute; z-index:-3; inset:-14%; display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); grid-template-rows:repeat(6,minmax(0,1fr)); gap:3px; opacity:.9; transform:scale(1.12); transform-origin:center; transition:opacity .6s ease; animation:music-color-field-drift 19s ease-in-out infinite alternate; will-change:transform; pointer-events:none; }
@@ -392,9 +392,6 @@ body {
 .music-experience-tint { position:absolute; z-index:0; inset:0; background:radial-gradient(ellipse at 70% 8%,rgba(255,255,255,.035),transparent 42%),linear-gradient(112deg,rgba(7,8,12,.18),rgba(8,9,13,.36) 58%,rgba(8,9,13,.52)); pointer-events:none; }
 .music-experience-content { position:relative; z-index:1; height:100%; min-height:0; display:flex; flex-direction:column; gap:8px; padding:10px 12px; }
 .music-workspace-panel { gap:0; padding:7px 12px 5px; }
-.music-page-view { isolation:isolate; }
-.music-page-view > .music-color-grid { z-index:0; inset:-14%; }
-.music-page-view > .card { z-index:1; background:transparent; border-color:transparent; }
 .music-page-content { flex:1 1 auto; height:100%; overflow:hidden; }
 .music-page-content > .music-experience { height:100%; }
 .music-experience-header,.music-source-group,.music-modes { display:flex; align-items:center; min-width:0; }

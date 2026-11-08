@@ -77,8 +77,9 @@ test("the Music tab exposes player, artwork, lyrics and split presentations", ()
   assert.equal(music.el.find(".music-artwork-card").length, 1, "the current MPRIS artwork is the interactive cover");
   assert.equal(music.el.find(".music-artwork-vinyl").length, 1, "the supplied vinyl artwork sits behind the cover");
   const grid = music.el.querySelector(".music-color-grid");
-  assert.equal(grid.parentNode, music.el, "the moving color grid covers the complete Music view behind its card");
-  assert.equal(music.el.children[0], grid, "the full-view grid is the backmost Music view layer");
+  const softener = music.el.querySelector(".music-color-softener");
+  assert.equal(grid.parentNode, music.el.querySelector(".music-experience"), "the moving grid stays clipped inside the rounded Music panel");
+  assert.ok(grid.parentNode.children.indexOf(grid) < grid.parentNode.children.indexOf(softener), "the grid sits underneath the rounded panel's glass layer");
   modes[2].fire("click");
   assert.ok(music.el.querySelector(".music-experience-stage").classList.contains("mode-lyrics"));
   modes[3].fire("click");
@@ -111,7 +112,8 @@ test("Music lyrics stay inside a bounded, scrollable viewport and reclaim the Mo
   assert.match(css, /\.mode-player \.music-experience-title\s*\{[^}]*font-size:15px/);
   assert.match(css, /\.mode-player \.music-experience-info\s*\{[^}]*width:min\(100%,280px\)/);
   assert.match(css, /\.mode-player \.music-experience-controls \.music-play-control\s*\{[^}]*width:34px/);
-  assert.match(css, /\.music-page-view > \.music-color-grid\s*\{[^}]*z-index:0/);
+  assert.match(css, /\.music-experience\s*\{[^}]*border-radius:16px/s);
+  assert.doesNotMatch(css, /\.music-page-view/);
   assert.doesNotMatch(css, /\.mode-lyrics \.music-experience-controls/);
   assert.match(css, /prefers-reduced-motion:\s*reduce[^}]*animation:none/s);
   assert.doesNotMatch(source, /NOW PLAYING/);

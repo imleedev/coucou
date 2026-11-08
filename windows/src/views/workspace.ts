@@ -189,7 +189,7 @@ function makeMusicDisplay(compact: boolean) {
 type LyricsData = { lines: LyricLine[]; synced: boolean; instrumental: boolean };
 const lyricsCache = new Map<string, LyricsData>();
 
-function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void; background: HTMLElement } {
+function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void } {
   type Mode = "player" | "art" | "lyrics" | "split";
   let mode: Mode = "player";
   let lyricState: "idle" | "loading" | "ready" | "none" | "error" = "idle";
@@ -251,7 +251,7 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void; 
   const info = h("div", { class: "music-experience-info" }, title, artist, album, h("div", { class: "music-experience-scrubber" }, times, progressTrack), controls);
   const stage = h("div", { class: "music-experience-stage mode-player" }, coverFrame, info, lyricsPanel);
   const footer = h("div", { class: "music-experience-footer" }, h("span", { text: "MPRIS · Linux" }), h("span", { text: "Synced lyrics when available" }));
-  const el = h("div", { class: "music-widget music-experience" }, backdrop, waveA, waveB, softener, tint, h("div", { class: "music-experience-content" }, header, stage, footer));
+  const el = h("div", { class: "music-widget music-experience" }, colorGrid, backdrop, waveA, waveB, softener, tint, h("div", { class: "music-experience-content" }, header, stage, footer));
 
   const paletteProbe = document.createElement("img");
   paletteProbe.crossOrigin = "anonymous";
@@ -428,16 +428,16 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void; 
     }), mode === "lyrics" || mode === "split" ? 300 : 1200);
   }
   function stop() { if (refreshTimer != null) window.clearInterval(refreshTimer); refreshTimer = null; }
-  return { el, sync: start, start, stop, background: colorGrid };
+  return { el, sync: start, start, stop };
 }
 
 export function buildMusicWidget() { return makeMusicDisplay(true); }
 
 export function buildMusicView(): ViewHost {
-  const display = makeImmersiveMusicDisplay();
+  const display = makeMusicDisplay(false);
   window.addEventListener("ax-island-view", (event) => { if ((event as CustomEvent).detail !== "music") display.stop(); });
   const content = h("div", { class: "workspace-content music-page-content" }, display.el);
-  const el = h("div", { class: "view music-page-view" }, display.background, h("div", { class: "card" },
+  const el = h("div", { class: "view" }, h("div", { class: "card" },
     h("div", { class: "workspace-panel music-workspace-panel" }, content)));
   return { el, sync: display.sync };
 }
