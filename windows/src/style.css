@@ -355,6 +355,7 @@ body {
   display:block;
   height:100%;
   min-height:0;
+  padding:0;
   overflow:hidden;
   isolation:isolate;
   border:1px solid rgba(255,255,255,.09);
@@ -404,9 +405,9 @@ body {
 .music-mode.active { color:#fff; background:rgba(255,255,255,.18); box-shadow:0 1px 4px rgba(0,0,0,.14); }
 .music-mode-label { display:none; }
 .music-experience-stage { min-height:0; flex:1 1 auto; display:grid; align-items:center; gap:12px; }
-.music-experience-stage.mode-player { grid-template-columns:minmax(112px, .78fr) minmax(0,1.42fr); }
+.music-experience-stage.mode-player { grid-template-columns:minmax(112px, .78fr) minmax(0,1.42fr); grid-template-rows:minmax(0,1fr); }
 .music-cover-frame { position:relative; width:100%; aspect-ratio:1; max-height:188px; overflow:visible; display:block; padding:0; border:0; border-radius:12px; background:transparent; color:inherit; cursor:pointer; }
-.mode-player .music-artwork-card { max-width:188px; justify-self:center; transform:translateX(52px); }
+.mode-player .music-artwork-card { width:auto; height:min(188px,100%); max-width:188px; max-height:188px; aspect-ratio:1; justify-self:center; transform:translateX(52px); }
 .music-artwork-vinyl { position:absolute; z-index:0; left:-42%; top:0; width:110%; height:100%; object-fit:contain; opacity:0; transform:translateX(22%); transition:opacity .3s ease,transform .48s cubic-bezier(.2,.7,.2,1); pointer-events:none; }
 .music-artwork-card:hover:not(:disabled) .music-artwork-vinyl,.music-artwork-card:focus-visible:not(:disabled) .music-artwork-vinyl { opacity:1; transform:translateX(0); }
 .music-artwork-card.is-playing .music-artwork-vinyl { animation:music-artwork-spin 1.333s linear infinite; }
