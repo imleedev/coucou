@@ -111,6 +111,7 @@ test("Music lyrics stay inside a bounded, scrollable viewport and reclaim the Mo
   assert.match(css, /music-artwork-card\.is-playing \.music-artwork-vinyl[^}]*music-artwork-spin/);
   assert.match(css, /\.mode-player \.music-experience-title\s*\{[^}]*font-size:15px/);
   assert.match(css, /\.mode-player \.music-experience-info\s*\{[^}]*width:min\(100%,280px\)/);
+  assert.match(css, /\.mode-player \.music-artwork-card\s*\{[^}]*translateX\(12px\)/);
   assert.match(css, /\.mode-player \.music-experience-controls \.music-play-control\s*\{[^}]*width:34px/);
   assert.match(css, /\.music-experience\s*\{[^}]*border-radius:16px/s);
   assert.doesNotMatch(css, /\.music-page-view/);
