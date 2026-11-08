@@ -76,6 +76,8 @@ test("the Music tab exposes player, artwork, lyrics and split presentations", ()
   assert.equal(music.el.find(".music-color-softener").length, 1, "a softening layer sits over the palette field");
   assert.equal(music.el.find(".music-artwork-card").length, 1, "the current MPRIS artwork is the interactive cover");
   assert.equal(music.el.find(".music-artwork-vinyl").length, 1, "the supplied vinyl artwork sits behind the cover");
+  assert.equal(music.el.find(".music-transport-cluster")[0].children.length, 5, "shuffle, transport and repeat stay grouped in one centered control cluster");
+  assert.equal(music.el.find(".music-lyrics-control").length, 1, "lyrics remain a separate control at the far edge");
   const grid = music.el.querySelector(".music-color-grid");
   const softener = music.el.querySelector(".music-color-softener");
   assert.equal(grid.parentNode, music.el.querySelector(".music-experience"), "the moving grid stays clipped inside the rounded Music panel");
@@ -88,9 +90,9 @@ test("the Music tab exposes player, artwork, lyrics and split presentations", ()
 });
 
 test("Music moves Mochi into the clear upper-right header space", () => {
-  const p = botPosition("expanded", "music", 320);
-  assert.deepEqual({ x: p.cx, y: p.cy, diameter: p.diameter }, { x: 522, y: 24, diameter: 38 });
-  assert.equal(islandSize("expanded", "music").w, 680, "only the Music view gets extra width for the cover and revealed vinyl");
+  const p = botPosition("expanded", "music", 288);
+  assert.deepEqual({ x: p.cx, y: p.cy, diameter: p.diameter }, { x: 534, y: 24, diameter: 38 });
+  assert.deepEqual(islandSize("expanded", "music"), { w: 704, h: 288 }, "only the Music view uses its wider, shorter layout");
 });
 
 test("Music lyrics stay inside a bounded, scrollable viewport and reclaim the Mochi gutter", () => {
@@ -110,16 +112,18 @@ test("Music lyrics stay inside a bounded, scrollable viewport and reclaim the Mo
   assert.match(css, /music-artwork-card:hover[^}]*music-artwork-vinyl/);
   assert.match(css, /music-artwork-card\.is-playing \.music-artwork-vinyl[^}]*music-artwork-spin/);
   assert.match(css, /\.mode-player \.music-experience-title\s*\{[^}]*font-size:15px/);
-  assert.match(css, /\.mode-player \.music-experience-info\s*\{[^}]*width:min\(100%,280px\)/);
+  assert.match(css, /\.mode-player \.music-experience-info\s*\{[^}]*width:100%;[^}]*justify-self:stretch/);
   assert.match(css, /\.mode-player \.music-artwork-card\s*\{[^}]*translateX\(52px\)/);
-  assert.match(css, /\.music-artwork-vinyl\s*\{[^}]*left:-30%;[^}]*width:110%/);
-  assert.match(css, /\.mode-player \.music-experience-controls \.music-play-control\s*\{[^}]*width:34px/);
+  assert.match(css, /\.music-artwork-vinyl\s*\{[^}]*left:-55%;[^}]*width:110%/);
+  assert.match(css, /\.music-artwork-card\.is-playing \.music-artwork-vinyl\s*\{[^}]*opacity:\.92;[^}]*animation:music-artwork-spin/);
+  assert.match(css, /\.music-experience-controls \.music-transport-cluster\s*\{[^}]*gap:18px/);
+  assert.match(css, /\.mode-player \.music-experience-controls \.music-play-control\s*\{[^}]*width:38px/);
   assert.match(css, /\.music-experience\s*\{[^}]*border-radius:16px/s);
   assert.doesNotMatch(css, /\.music-page-view/);
   assert.doesNotMatch(css, /\.mode-lyrics \.music-experience-controls/);
   assert.match(css, /prefers-reduced-motion:\s*reduce[^}]*animation:none/s);
   assert.doesNotMatch(source, /NOW PLAYING/);
-  assert.match(css, /\.music-workspace-panel\s*\{[^}]*padding:\s*7px 12px 5px\s*;/s);
+  assert.match(css, /\.music-workspace-panel\s*\{[^}]*padding:\s*0\s*;/s);
   assert.match(css, /\.mode-lyrics\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\)/s);
   assert.match(css, /\.music-lyrics-lines\s*\{[^}]*overflow-y:\s*auto/s);
 });
