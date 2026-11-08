@@ -253,13 +253,13 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
   const play = h("button", { class: "music-play-control", title: t("Play"), "aria-label": t("Play"), onclick: () => void media.control("play-pause").then(render) }, musicIcon("play", 17));
   const next = h("button", { class: "music-transport", title: tl("Next track"), "aria-label": tl("Next track"), onclick: () => void media.control("next").then(render) }, musicIcon("next", 18));
   const repeat = h("button", { class: "music-small-control", title: "Repeat", "aria-label": "Repeat", onclick: () => void media.setting("repeat", !media.state.repeat).then(render) }, musicIcon("repeat", 15));
-  const transport = h("div", { class: "music-transport-cluster" }, previous, play, next);
+  const transport = h("div", { class: "music-transport-cluster" }, shuffle, previous, play, next, repeat);
   const lyricsControl = h("button", { class: "music-lyrics-control", title: "Lyrics", "aria-label": "Show lyrics", onclick: () => {
     mode = mode === "lyrics" || mode === "split" ? "player" : "lyrics";
     render();
     if (mode === "lyrics") void loadLyrics();
   } }, musicIcon("lyrics", 18));
-  const controls = h("div", { class: "music-experience-controls" }, shuffle, transport, repeat, lyricsControl);
+  const controls = h("div", { class: "music-experience-controls" }, transport, lyricsControl);
   const elapsed = h("span", { text: "0:00" });
   const remaining = h("span", { text: "−0:00" });
   const progressFill = h("i");
