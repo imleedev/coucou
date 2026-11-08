@@ -220,10 +220,14 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
   const coverPlaceholder = h("div", { class: "music-cover-placeholder", text: "♫" });
   // MPRIS exposes the current item, not a playlist. Present that real artwork
   // as a record label; the existing transport buttons move through the player queue.
-  const record = h("div", { class: "music-record", "aria-label": "Current track record" },
+  const record = h("div", { class: "music-record music-record-current", "aria-label": "Current track record" },
     h("div", { class: "music-record-label" }, cover, coverPlaceholder),
     h("span", { class: "music-record-spindle", "aria-hidden": "true" }));
-  const coverFrame = h("div", { class: "music-cover-frame" }, record);
+  const recordCascade = h("div", { class: "music-record-cascade", "aria-label": "Record artwork" },
+    h("span", { class: "music-record music-record-echo echo-back", "aria-hidden": "true" }),
+    h("span", { class: "music-record music-record-echo echo-front", "aria-hidden": "true" }),
+    record);
+  const coverFrame = h("div", { class: "music-cover-frame" }, recordCascade);
   const title = h("h1", { class: "music-experience-title", text: "No media playing" });
   const artist = h("div", { class: "music-experience-artist", text: "Play music in Spotify or another MPRIS player" });
   const album = h("div", { class: "music-experience-album" });
@@ -347,6 +351,8 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
     album.hidden = !state.album;
     provider.textContent = state.player || "NO PLAYER CONNECTED";
     updatePalette(state.art, key);
+    recordCascade.style.setProperty("--record-accent", paletteColors[0] ?? "#5b6070");
+    recordCascade.style.setProperty("--record-accent-soft", paletteColors[2] ?? "#9994a5");
     if (state.art && cover.src !== new URL(state.art, window.location.href).href) {
       cover.src = state.art; backdrop.src = state.art;
     }
