@@ -13,16 +13,17 @@ type Media = {
 };
 const noMedia: Media = { player: "", title: "", artist: "", album: "", art: null, status: "Stopped", position: 0, duration: 0, shuffle: false, repeat: false, canSeek: false };
 
-function musicIcon(name: "previous" | "play" | "pause" | "next" | "shuffle" | "repeat", size: number) {
+function musicIcon(name: "previous" | "play" | "pause" | "next" | "shuffle" | "repeat" | "lyrics", size: number) {
   const paths = {
-    previous: "M6 5h2v14H6zM19.2 6.1c.5-.4 1.3 0 1.3.7v11.4c0 .7-.8 1.1-1.3.7L10 13.2a1.4 1.4 0 0 1 0-2.4z",
+    previous: "M10 5.2c.55-.4 1.3 0 1.3.7v12.2c0 .7-.75 1.1-1.3.7L3.1 13.5a1.45 1.45 0 0 1 0-2.3zM18 5.2c.55-.4 1.3 0 1.3.7v12.2c0 .7-.75 1.1-1.3.7l-6.9-5.3a1.45 1.45 0 0 1 0-2.3z",
     play: ICONS.play,
     pause: ICONS.pause,
-    next: "M16 5h2v14h-2zM4.8 6.1c-.5-.4-1.3 0-1.3.7v11.4c0 .7.8 1.1 1.3.7L14 13.2a1.4 1.4 0 0 0 0-2.4z",
+    next: "M5.1 5.2c-.55-.4-1.3 0-1.3.7v12.2c0 .7.75 1.1 1.3.7l6.9-5.3a1.45 1.45 0 0 0 0-2.3zM13.1 5.2c-.55-.4-1.3 0-1.3.7v12.2c0 .7.75 1.1 1.3.7l6.9-5.3a1.45 1.45 0 0 0 0-2.3z",
     shuffle: ICONS.shuffle,
     repeat: ICONS.repeat,
+    lyrics: "M4.5 2.5h9A2.5 2.5 0 0 1 16 5v5.5a2.5 2.5 0 0 1-2.5 2.5H8l-3.5 2.8V13A2.5 2.5 0 0 1 2 10.5V5a2.5 2.5 0 0 1 2.5-2.5zM6.3 6.7h.1m3.7 0h.1M6.5 6.8a.7.7 0 1 0 0-.1m3.7.1a.7.7 0 1 0 0-.1M7 8.2c0 1.1-.5 1.7-1.4 2m4.8-2c0 1.1-.5 1.7-1.4 2",
   } as const;
-  return svg(paths[name], size, name === "shuffle" || name === "repeat" ? { stroke: 1.9 } : undefined);
+  return svg(paths[name], size, name === "shuffle" || name === "repeat" || name === "lyrics" ? { stroke: 1.5 } : undefined);
 }
 
 async function api<T>(path: string, method = "GET", data?: unknown): Promise<T> {
@@ -252,7 +253,13 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
   const play = h("button", { class: "music-play-control", title: t("Play"), "aria-label": t("Play"), onclick: () => void media.control("play-pause").then(render) }, musicIcon("play", 17));
   const next = h("button", { class: "music-transport", title: tl("Next track"), "aria-label": tl("Next track"), onclick: () => void media.control("next").then(render) }, musicIcon("next", 18));
   const repeat = h("button", { class: "music-small-control", title: "Repeat", "aria-label": "Repeat", onclick: () => void media.setting("repeat", !media.state.repeat).then(render) }, musicIcon("repeat", 15));
-  const controls = h("div", { class: "music-experience-controls" }, shuffle, previous, play, next, repeat);
+  const transport = h("div", { class: "music-transport-cluster" }, previous, play, next);
+  const lyricsControl = h("button", { class: "music-lyrics-control", title: "Lyrics", "aria-label": "Show lyrics", onclick: () => {
+    mode = mode === "lyrics" || mode === "split" ? "player" : "lyrics";
+    render();
+    if (mode === "lyrics") void loadLyrics();
+  } }, musicIcon("lyrics", 18));
+  const controls = h("div", { class: "music-experience-controls" }, shuffle, transport, repeat, lyricsControl);
   const elapsed = h("span", { text: "0:00" });
   const remaining = h("span", { text: "−0:00" });
   const progressFill = h("i");
@@ -381,6 +388,7 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
     play.replaceChildren(musicIcon(state.status === "Playing" ? "pause" : "play", 17));
     play.title = state.status === "Playing" ? t("Pause") : t("Play");
     for (const button of [previous, play, next, shuffle, repeat]) button.disabled = !state.player;
+    lyricsControl.classList.toggle("active", mode === "lyrics" || mode === "split");
     shuffle.classList.toggle("active", state.shuffle); repeat.classList.toggle("active", state.repeat);
     const fraction = state.duration > 0 ? Math.max(0, Math.min(1, state.position / state.duration)) : 0;
     progressFill.style.width = `${fraction * 100}%`; progressKnob.style.left = `${fraction * 100}%`;
