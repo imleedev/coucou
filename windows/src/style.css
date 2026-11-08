@@ -406,7 +406,7 @@ body {
 .music-experience-stage { min-height:0; flex:1 1 auto; display:grid; align-items:center; gap:12px; }
 .music-experience-stage.mode-player { grid-template-columns:minmax(112px, .78fr) minmax(0,1.42fr); }
 .music-cover-frame { position:relative; width:100%; aspect-ratio:1; max-height:188px; overflow:visible; display:block; padding:0; border:0; border-radius:12px; background:transparent; color:inherit; cursor:pointer; }
-.music-artwork-vinyl { position:absolute; z-index:0; left:-50%; top:6%; width:100%; height:88%; object-fit:contain; opacity:0; transform:translateX(50%); transition:opacity .3s ease,transform .48s cubic-bezier(.2,.7,.2,1); pointer-events:none; }
+.music-artwork-vinyl { position:absolute; z-index:0; left:-11%; top:12%; width:82%; height:76%; object-fit:contain; opacity:0; transform:translateX(13%); transition:opacity .3s ease,transform .48s cubic-bezier(.2,.7,.2,1); pointer-events:none; }
 .music-artwork-card:hover:not(:disabled) .music-artwork-vinyl,.music-artwork-card:focus-visible:not(:disabled) .music-artwork-vinyl { opacity:1; transform:translateX(0); }
 .music-artwork-card.is-playing .music-artwork-vinyl { animation:music-artwork-spin 1.333s linear infinite; }
 .music-artwork-card:disabled { cursor:default; }
