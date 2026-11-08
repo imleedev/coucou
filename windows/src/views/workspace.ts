@@ -4,6 +4,8 @@ import { Bridge, IS_TAURI } from "../core/bridge";
 import { t, tl } from "../i18n/i18n";
 import type { ViewHost } from "./views";
 
+const musicVinyl = new URL("../assets/music-vinyl.png", import.meta.url).href;
+
 type Media = {
   player: string; title: string; artist: string; album: string; art: string | null;
   status: "Playing" | "Paused" | "Stopped" | "Unknown"; position: number; duration: number;
@@ -218,16 +220,15 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
   const header = h("div", { class: "music-experience-header" }, h("div", { class: "music-source-group" }, provider), modes);
   const cover = h("img", { class: "music-experience-cover", alt: "Album cover" }) as HTMLImageElement;
   const coverPlaceholder = h("div", { class: "music-cover-placeholder", text: "♫" });
-  // MPRIS exposes the current item, not a playlist. Present that real artwork
-  // as a record label; the existing transport buttons move through the player queue.
-  const record = h("div", { class: "music-record music-record-current", "aria-label": "Current track record" },
-    h("div", { class: "music-record-label" }, cover, coverPlaceholder),
-    h("span", { class: "music-record-spindle", "aria-hidden": "true" }));
-  const recordCascade = h("div", { class: "music-record-cascade", "aria-label": "Record artwork" },
-    h("span", { class: "music-record music-record-echo echo-back", "aria-hidden": "true" }),
-    h("span", { class: "music-record music-record-echo echo-front", "aria-hidden": "true" }),
-    record);
-  const coverFrame = h("div", { class: "music-cover-frame" }, recordCascade);
+  const vinyl = h("img", { class: "music-artwork-vinyl", src: musicVinyl, alt: "" }) as HTMLImageElement;
+  const artworkHint = h("span", { class: "music-artwork-play-hint", "aria-hidden": "true" }, svg(ICONS.play, 13));
+  const coverFrame = h("button", {
+    class: "music-cover-frame music-artwork-card",
+    type: "button",
+    title: "Play or pause",
+    "aria-label": "Play or pause current track",
+    onclick: () => void media.control("play-pause").then(render),
+  }, vinyl, cover, coverPlaceholder, artworkHint) as HTMLButtonElement;
   const title = h("h1", { class: "music-experience-title", text: "No media playing" });
   const artist = h("div", { class: "music-experience-artist", text: "Play music in Spotify or another MPRIS player" });
   const album = h("div", { class: "music-experience-album" });
@@ -351,14 +352,17 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
     album.hidden = !state.album;
     provider.textContent = state.player || "NO PLAYER CONNECTED";
     updatePalette(state.art, key);
-    recordCascade.style.setProperty("--record-accent", paletteColors[0] ?? "#5b6070");
-    recordCascade.style.setProperty("--record-accent-soft", paletteColors[2] ?? "#9994a5");
     if (state.art && cover.src !== new URL(state.art, window.location.href).href) {
       cover.src = state.art; backdrop.src = state.art;
     }
     cover.hidden = !state.art; backdrop.hidden = !state.art; coverPlaceholder.hidden = Boolean(state.art);
     cover.alt = state.title ? `Artwork for ${state.title}${state.artist ? ` by ${state.artist}` : ""}` : "Album artwork";
-    record.classList.toggle("is-playing", state.status === "Playing");
+    coverFrame.classList.toggle("is-playing", state.status === "Playing");
+    coverFrame.disabled = !state.player;
+    coverFrame.setAttribute("aria-label", state.status === "Playing"
+      ? `Pause ${state.title || "current track"}${state.artist ? ` by ${state.artist}` : ""}`
+      : `Play ${state.title || "current track"}${state.artist ? ` by ${state.artist}` : ""}`);
+    artworkHint.replaceChildren(svg(state.status === "Playing" ? ICONS.pause : ICONS.play, 13));
     play.replaceChildren(svg(state.status === "Playing" ? ICONS.pause : ICONS.play, 17));
     play.title = state.status === "Playing" ? t("Pause") : t("Play");
     for (const button of [previous, play, next, shuffle, repeat]) button.disabled = !state.player;

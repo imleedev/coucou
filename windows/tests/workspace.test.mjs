@@ -74,9 +74,8 @@ test("the Music tab exposes player, artwork, lyrics and split presentations", ()
   assert.equal(modes.length, 4);
   assert.equal(music.el.find(".music-color-wave").length, 2, "two independently animated color waves sit behind the content");
   assert.equal(music.el.find(".music-color-softener").length, 1, "a softening layer sits over the palette field");
-  assert.equal(music.el.find(".music-record-current").length, 1, "the active MPRIS artwork gets one featured record");
-  assert.equal(music.el.find(".music-record-echo").length, 2, "two subdued vinyl layers form the cascade behind it");
-  assert.equal(music.el.find(".music-record-label").length, 1, "the real album art fills the active record face");
+  assert.equal(music.el.find(".music-artwork-card").length, 1, "the current MPRIS artwork is the interactive cover");
+  assert.equal(music.el.find(".music-artwork-vinyl").length, 1, "the supplied vinyl artwork sits behind the cover");
   const softener = music.el.querySelector(".music-color-softener");
   assert.ok(softener.parentNode.children.indexOf(music.el.querySelector(".music-color-grid")) < softener.parentNode.children.indexOf(softener), "the color grid is painted before the glass blur layer");
   modes[2].fire("click");
@@ -105,9 +104,8 @@ test("Music lyrics stay inside a bounded, scrollable viewport and reclaim the Mo
   assert.match(css, /animation:music-wave-a\s+8s/);
   assert.match(css, /animation:music-wave-b\s+11\.5s/);
   assert.match(css, /animation:music-color-field-drift\s+19s/);
-  assert.match(css, /music-record-current::before[^}]*repeating-radial-gradient/);
-  assert.match(css, /music-record-echo\.echo-back[^}]*rotateY/);
-  assert.match(css, /music-record-current\.is-playing[^}]*music-record-spin/);
+  assert.match(css, /music-artwork-card:hover[^}]*music-artwork-vinyl/);
+  assert.match(css, /music-artwork-card\.is-playing \.music-artwork-vinyl[^}]*music-artwork-spin/);
   assert.match(css, /prefers-reduced-motion:\s*reduce[^}]*animation:none/s);
   assert.doesNotMatch(source, /NOW PLAYING/);
   assert.match(css, /\.music-workspace-panel\s*\{[^}]*padding:\s*7px 12px 5px\s*;/s);
@@ -139,6 +137,9 @@ test("synced lyrics are keyboard accessible and clicking a line seeks to its tim
     music.sync();
     await new Promise((resolve) => setImmediate(resolve));
     assert.ok(playbackStates.includes(true), "real playing state is published for Mochi's music animation");
+    music.el.querySelector(".music-artwork-card").fire("click");
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.ok(calls.slice(callsBefore).some(([command, args]) => command === "spotify_control" && args.action === "playPause"), "clicking the cover uses the real Spotify/MPRIS play-pause control");
     music.el.find(".music-mode")[2].fire("click");
     await new Promise((resolve) => setImmediate(resolve));
     const line = music.el.find(".music-lyric-line")[0];
