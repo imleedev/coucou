@@ -392,7 +392,7 @@ body {
 .music-color-softener { position:absolute; z-index:-1; inset:-12%; background:rgba(8,9,13,.035); -webkit-backdrop-filter:blur(76px) saturate(1.35); backdrop-filter:blur(76px) saturate(1.35); pointer-events:none; }
 .music-experience-tint { position:absolute; z-index:0; inset:0; background:radial-gradient(ellipse at 70% 8%,rgba(255,255,255,.035),transparent 42%),linear-gradient(112deg,rgba(7,8,12,.18),rgba(8,9,13,.36) 58%,rgba(8,9,13,.52)); pointer-events:none; }
 .music-experience-content { position:relative; z-index:1; height:100%; min-height:0; display:flex; flex-direction:column; gap:8px; padding:10px 12px; }
-.music-workspace-panel { gap:0; padding:7px 12px 5px; }
+.music-workspace-panel { gap:0; padding:0; }
 .music-page-content { flex:1 1 auto; height:100%; overflow:hidden; }
 .music-page-content > .music-experience { height:100%; }
 .music-experience-header,.music-source-group,.music-modes { display:flex; align-items:center; min-width:0; }
