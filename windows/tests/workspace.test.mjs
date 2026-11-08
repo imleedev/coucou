@@ -112,12 +112,12 @@ test("Music lyrics stay inside a bounded, scrollable viewport and reclaim the Mo
   assert.match(css, /music-artwork-card:hover[^}]*music-artwork-vinyl/);
   assert.match(css, /music-artwork-card\.is-playing \.music-artwork-vinyl[^}]*music-artwork-spin/);
   assert.match(css, /\.mode-player \.music-experience-title\s*\{[^}]*font-size:15px/);
-  assert.match(css, /\.mode-player \.music-experience-info\s*\{[^}]*width:100%;[^}]*justify-self:stretch/);
+  assert.match(css, /\.mode-player \.music-experience-info\s*\{[^}]*width:min\(100%,340px\);[^}]*justify-self:center/);
   assert.match(css, /\.mode-player \.music-artwork-card\s*\{[^}]*translateX\(52px\)/);
   assert.match(css, /\.music-artwork-vinyl\s*\{[^}]*left:-55%;[^}]*width:110%/);
   assert.match(css, /\.music-artwork-card\.is-playing \.music-artwork-vinyl\s*\{[^}]*opacity:\.92;[^}]*animation:music-artwork-spin/);
-  assert.match(css, /\.music-experience-controls \.music-transport-cluster\s*\{[^}]*gap:12px/);
-  assert.match(css, /\.mode-player \.music-experience-controls \.music-play-control\s*\{[^}]*width:32px/);
+  assert.match(css, /\.music-experience-controls \.music-transport-cluster\s*\{[^}]*gap:8px/);
+  assert.match(css, /\.mode-player \.music-experience-controls \.music-play-control\s*\{[^}]*width:28px/);
   assert.match(css, /\.music-experience\s*\{[^}]*border-radius:16px/s);
   assert.doesNotMatch(css, /\.music-page-view/);
   assert.doesNotMatch(css, /\.mode-lyrics \.music-experience-controls/);

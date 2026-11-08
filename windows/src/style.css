@@ -441,19 +441,19 @@ body {
 .music-experience-controls button:active { transform:scale(.86); }
 .music-experience-controls button svg { position:relative; z-index:1; }
 .music-experience-controls button:disabled { opacity:.32; cursor:default; }
-.music-experience-controls .music-small-control { position:relative; flex:0 0 18px; width:18px; height:20px; color:rgba(255,255,255,.5); }
+.music-experience-controls .music-small-control { position:relative; flex:0 0 16px; width:16px; height:20px; color:rgba(255,255,255,.5); }
 .music-experience-controls .music-small-control:hover,.music-experience-controls .music-small-control.active { color:rgba(255,255,255,.94); }
 .music-experience-controls .music-small-control.active { color:#fff; background:rgba(255,255,255,.12); }
 .music-experience-controls .music-small-control.active::before { display:none; }
-.music-experience-controls .music-transport { width:28px; height:30px; color:rgba(255,255,255,.94); }
-.music-experience-controls .music-play-control { width:32px; height:30px; color:#fff; background:transparent; box-shadow:none; }
+.music-experience-controls .music-transport { width:24px; height:28px; color:rgba(255,255,255,.94); }
+.music-experience-controls .music-play-control { width:28px; height:28px; color:#fff; background:transparent; box-shadow:none; }
 .music-experience-controls .music-play-control::before { width:34px; height:34px; }
-.music-experience-controls .music-transport-cluster { display:flex; align-items:center; justify-content:center; gap:12px; }
+.music-experience-controls .music-transport-cluster { display:flex; align-items:center; justify-content:center; gap:8px; }
 .music-experience-controls .music-lyrics-control { position:absolute; right:0; width:30px; height:30px; border-radius:8px; color:rgba(255,255,255,.9); }
 .music-experience-controls .music-lyrics-control::before { width:27px; height:27px; border-radius:8px; }
 .music-experience-controls .music-lyrics-control.active { color:#191a20; background:rgba(255,255,255,.92); }
 .music-experience-controls .music-lyrics-control.active::before { display:none; }
-.mode-player .music-experience-info { width:100%; justify-self:stretch; gap:2px; }
+.mode-player .music-experience-info { width:min(100%,340px); justify-self:center; gap:2px; }
 .mode-player .music-experience-title { font-size:15px; line-height:1.12; }
 .mode-player .music-experience-artist { font-size:10px; }
 .mode-player .music-experience-album { font-size:8px; }
@@ -463,9 +463,9 @@ body {
 .mode-player .music-progress-track,.mode-player .music-experience-progress > i { height:3px; }
 .mode-player .music-experience-progress > b { width:6px; height:6px; margin-left:-3px; }
 .mode-player .music-experience-controls { margin-top:0; }
-.mode-player .music-experience-controls .music-small-control { width:18px; height:20px; }
-.mode-player .music-experience-controls .music-transport { width:28px; height:30px; }
-.mode-player .music-experience-controls .music-play-control { width:32px; height:30px; }
+.mode-player .music-experience-controls .music-small-control { width:16px; height:20px; }
+.mode-player .music-experience-controls .music-transport { width:24px; height:28px; }
+.mode-player .music-experience-controls .music-play-control { width:28px; height:28px; }
 @media (prefers-reduced-motion: reduce) { .music-artwork-vinyl,.music-experience-cover,.music-artwork-play-hint { transition:none; }.music-artwork-card.is-playing .music-artwork-vinyl { animation:none; } }
 .music-lyrics-panel { min-width:0; min-height:0; display:none; overflow:hidden; }
 .music-lyrics-heading { margin-bottom:8px; color:rgba(255,255,255,.48); font:8px var(--mono); letter-spacing:.13em; text-transform:uppercase; }
