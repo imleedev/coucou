@@ -7,7 +7,7 @@ import { installFakeDom } from "./fakedom.mjs";
 installFakeDom();
 const { buildHeader, buildViews } = await import("../src/views/views.ts");
 const { arrangeMusicPalette, buildMusicView, dominantColors, parseTimedLyrics } = await import("../src/views/workspace.ts");
-const { botPosition } = await import("../src/core/layout.ts");
+const { botPosition, islandSize } = await import("../src/core/layout.ts");
 const { State, DEFAULT_SETTINGS } = await import("../src/core/state.ts");
 State.settings = { ...DEFAULT_SETTINGS };
 
@@ -89,7 +89,8 @@ test("the Music tab exposes player, artwork, lyrics and split presentations", ()
 
 test("Music moves Mochi into the clear upper-right header space", () => {
   const p = botPosition("expanded", "music", 320);
-  assert.deepEqual({ x: p.cx, y: p.cy, diameter: p.diameter }, { x: 502, y: 24, diameter: 38 });
+  assert.deepEqual({ x: p.cx, y: p.cy, diameter: p.diameter }, { x: 522, y: 24, diameter: 38 });
+  assert.equal(islandSize("expanded", "music").w, 680, "only the Music view gets extra width for the cover and revealed vinyl");
 });
 
 test("Music lyrics stay inside a bounded, scrollable viewport and reclaim the Mochi gutter", () => {
@@ -107,11 +108,11 @@ test("Music lyrics stay inside a bounded, scrollable viewport and reclaim the Mo
   assert.match(css, /animation:music-wave-b\s+11\.5s/);
   assert.match(css, /animation:music-color-field-drift\s+19s/);
   assert.match(css, /music-artwork-card:hover[^}]*music-artwork-vinyl/);
-  assert.match(css, /\.music-artwork-vinyl\s*\{[^}]*left:-11%;[^}]*width:82%;[^}]*height:76%/);
   assert.match(css, /music-artwork-card\.is-playing \.music-artwork-vinyl[^}]*music-artwork-spin/);
   assert.match(css, /\.mode-player \.music-experience-title\s*\{[^}]*font-size:15px/);
   assert.match(css, /\.mode-player \.music-experience-info\s*\{[^}]*width:min\(100%,280px\)/);
-  assert.match(css, /\.mode-player \.music-artwork-card\s*\{[^}]*translateX\(12px\)/);
+  assert.match(css, /\.mode-player \.music-artwork-card\s*\{[^}]*translateX\(52px\)/);
+  assert.match(css, /\.music-artwork-vinyl\s*\{[^}]*left:-30%;[^}]*width:110%/);
   assert.match(css, /\.mode-player \.music-experience-controls \.music-play-control\s*\{[^}]*width:34px/);
   assert.match(css, /\.music-experience\s*\{[^}]*border-radius:16px/s);
   assert.doesNotMatch(css, /\.music-page-view/);

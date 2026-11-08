@@ -70,6 +70,7 @@ export const NOTCH_W = 184;
 export const NOTCH_H = 32;
 export const COMPACT_W = NOTCH_W;
 export const EXPANDED_W = 640;
+export const MUSIC_EXPANDED_W = 680;
 
 export const ROUNDED_CORNER = 14; // hidden / compact
 export const EXPANDED_CORNER = 22;
@@ -111,7 +112,7 @@ export const VIEW_LAYOUTS: Record<IslandViewName, ViewLayout> = {
   whatsNew: { height: 222, botX: 62, botY: null, botDiameter: 58, agentMode: "none" },
   // Music leaves the left side of its card free and parks Mochi in the open
   // header slot beside the window controls.
-  music: { height: 320, botX: 502, botY: 24, botDiameter: 38, agentMode: "none" },
+  music: { height: 320, botX: 522, botY: 24, botDiameter: 38, agentMode: "none" },
   calendar: { height: 240, botX: 62, botY: null, botDiameter: 46, agentMode: "none" },
   shelf: { height: 184, botX: 62, botY: null, botDiameter: 46, agentMode: "none" },
   system: { height: 184, botX: 62, botY: null, botDiameter: 46, agentMode: "none" },
@@ -144,7 +145,7 @@ export function islandSize(
       return { w: COMPACT_W, h: NOTCH_H };
     case "expanded": {
       const h = view === "prompt" ? chatPromptHeight(chatCount) : VIEW_LAYOUTS[view].height;
-      return { w: EXPANDED_W, h };
+      return { w: view === "music" ? MUSIC_EXPANDED_W : EXPANDED_W, h };
     }
   }
 }
