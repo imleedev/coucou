@@ -112,7 +112,7 @@ export const VIEW_LAYOUTS: Record<IslandViewName, ViewLayout> = {
   whatsNew: { height: 222, botX: 62, botY: null, botDiameter: 58, agentMode: "none" },
   // Music leaves the left side of its card free and parks Mochi in the open
   // header slot beside the window controls.
-  music: { height: 320, botX: 534, botY: 24, botDiameter: 38, agentMode: "none" },
+  music: { height: 288, botX: 534, botY: 24, botDiameter: 38, agentMode: "none" },
   calendar: { height: 240, botX: 62, botY: null, botDiameter: 46, agentMode: "none" },
   shelf: { height: 184, botX: 62, botY: null, botDiameter: 46, agentMode: "none" },
   system: { height: 184, botX: 62, botY: null, botDiameter: 46, agentMode: "none" },
