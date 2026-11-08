@@ -106,6 +106,9 @@ test("Music lyrics stay inside a bounded, scrollable viewport and reclaim the Mo
   assert.match(css, /animation:music-color-field-drift\s+19s/);
   assert.match(css, /music-artwork-card:hover[^}]*music-artwork-vinyl/);
   assert.match(css, /music-artwork-card\.is-playing \.music-artwork-vinyl[^}]*music-artwork-spin/);
+  assert.match(css, /\.mode-player \.music-experience-title\s*\{[^}]*font-size:15px/);
+  assert.match(css, /\.mode-player \.music-experience-controls \.music-play-control\s*\{[^}]*width:34px/);
+  assert.doesNotMatch(css, /\.mode-lyrics \.music-experience-controls/);
   assert.match(css, /prefers-reduced-motion:\s*reduce[^}]*animation:none/s);
   assert.doesNotMatch(source, /NOW PLAYING/);
   assert.match(css, /\.music-workspace-panel\s*\{[^}]*padding:\s*7px 12px 5px\s*;/s);
