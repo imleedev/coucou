@@ -43,6 +43,7 @@ function sharedSounds(): Plugin {
 }
 
 export default defineConfig({
+  base: "./",
   plugins: [sharedSounds()],
   clearScreen: false,
   server: {
@@ -64,6 +65,7 @@ export default defineConfig({
         island: resolve(__dirname, "index.html"),
         settings: resolve(__dirname, "settings.html"),
         mochi: resolve(__dirname, "mochi.html"),
+        emotionLab: resolve(__dirname, "mochi-emotion-lab.html"),
         pill: resolve(__dirname, "pill.html"),
       },
       output: {

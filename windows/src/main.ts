@@ -42,6 +42,11 @@ async function main() {
   }
 
   const island = new Island(root);
+  (window as unknown as { __axIsland?: Island }).__axIsland = island;
+  window.dispatchEvent(new Event("ax-island-ready"));
+  (window as unknown as { __axIslandMode?: string }).__axIslandMode = State.mode;
+  State.isPinned = true;
+  island.fsm.pinned = true;
 
   const boot = await Bridge.boot();
   if (boot) {
@@ -182,7 +187,10 @@ async function main() {
   island.onWake = checkRecap;
   await onEvent<null>("recap-check", checkRecap);
 
-  island.launch();
+  // The host starts as a permanent compact notch; opening is user-driven.
+  State.isPinned = true;
+  island.fsm.pinned = true;
+  island.fsm.forcePetit();
 
   // In a plain browser there is no wake strip behind the cursor: make the whole
   // page wake the island so the visuals can be checked with `npm run dev`.

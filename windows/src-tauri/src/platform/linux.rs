@@ -448,6 +448,10 @@ static LAYER_SURFACE: AtomicBool = AtomicBool::new(false);
 /// shape it is empty, so nothing takes the mouse.
 type Region = Option<(f64, f64, f64, f64)>;
 static INPUT_REGION: Mutex<Region> = Mutex::new(Some((0.0, 0.0, 0.0, 0.0)));
+// GTK's first-frame remap happens after Tauri's initial geometry request. Keep
+// the last logical size so that remapping the layer surface cannot restore the
+// small size from tauri.linux.conf.json and leave an invisible, tiny drop target.
+static ISLAND_SIZE: Mutex<(i32, i32)> = Mutex::new((720, 320));
 
 fn gtk_window_ptr(win: &gtk::ApplicationWindow) -> *mut gtk::ffi::GtkWindow {
     let w: &gtk::Window = win.upcast_ref();
@@ -525,6 +529,8 @@ pub fn make_non_activating(win: &WebviewWindow) {
             gtk::glib::idle_add_local_once(move || {
                 w.hide();
                 w.show_all();
+                let (width, height) = *ISLAND_SIZE.lock().unwrap();
+                w.resize(width, height);
                 apply_input_region(&w, *INPUT_REGION.lock().unwrap());
             });
         }
@@ -649,6 +655,11 @@ pub fn set_input_region(win: &WebviewWindow, rect: Region) {
     *INPUT_REGION.lock().unwrap() = rect;
     let Ok(gw) = win.gtk_window() else { return };
     apply_input_region(&gw, rect);
+}
+
+/// Save the size the island must have after its first-frame remap.
+pub fn remember_island_size(width: i32, height: i32) {
+    *ISLAND_SIZE.lock().unwrap() = (width.max(1), height.max(1));
 }
 
 fn apply_input_region(gw: &impl IsA<gtk::Widget>, rect: Region) {

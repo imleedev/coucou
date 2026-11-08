@@ -1,7 +1,7 @@
 // Mini Mochis (pills + compact grid) — port of MiniBotCanvasView.
 // Each canvas owns a BotEngine; the island's frame loop ticks every live one.
 
-import { BotEngine, hexToRGB } from "./engine";
+import { BOT_BODY_WIDTH_RATIO, BotEngine, hexToRGB } from "./engine";
 import type { AgentTask } from "../core/state";
 
 interface MiniBot {
@@ -18,11 +18,9 @@ const live = new Map<HTMLCanvasElement, MiniBot>();
 /**
  * Creates a mini Mochi whose **body** is `bodySize` CSS pixels across.
  *
- * The engine draws the body at 60 % of its canvas, so the canvas is
- * `bodySize / 0.6` and is centred in a `bodySize` slot, overflowing it — the
- * same thing SwiftUI does with a `.frame(width: 22/0.6)` inside a
- * `.frame(width: 22)`. Sizing the canvas itself to `bodySize` would shrink the
- * whole drawing to 60 %, which is what used to happen.
+ * The engine draws the body at 68.4 % of its canvas, so the canvas is
+ * `bodySize / BOT_BODY_WIDTH_RATIO` and is centred in a `bodySize` slot, overflowing it.
+ * Sizing the canvas itself to `bodySize` would make the body 31.6 % too small.
  */
 export function createMiniBot(task: AgentTask, bodySize: number, dancing?: () => boolean): HTMLElement {
   const slot = document.createElement("span");
@@ -31,7 +29,7 @@ export function createMiniBot(task: AgentTask, bodySize: number, dancing?: () =>
   slot.style.height = `${bodySize}px`;
 
   const canvas = document.createElement("canvas");
-  const engineSize = bodySize / 0.6;
+  const engineSize = bodySize / BOT_BODY_WIDTH_RATIO;
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   canvas.width = Math.round(engineSize * dpr);
   canvas.height = Math.round(engineSize * dpr);

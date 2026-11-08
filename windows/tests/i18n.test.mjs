@@ -460,6 +460,9 @@ const NOT_TEXT = new Set([
   "Resend", // the service's name (the Mac's "Resend" is a button: send again)
   "Stop", // Claude Code's hook event (the Mac's "Stop" is a button)
   "running", // the phase of a mail plan (src/views/mailplan.ts)
+  "Playing", // MPRIS playback state, not displayed as a label (src/views/workspace.ts)
+  "Paused", // MPRIS playback state, not displayed as a label (src/views/workspace.ts)
+  "Unknown", // MPRIS fallback state, not displayed as a label (src/views/workspace.ts)
 ]);
 
 test("no known user-facing English literal outside t() in the views and settings", () => {

@@ -7353,6 +7353,21 @@
       "tr": "Kompakt adada göster",
       "ko": "컴팩트 아일랜드에 표시",
       "ja": "コンパクトアイランドに表示"
+    },
+    "Music": {
+      "zh-Hans": "音乐", "hi": "संगीत", "es": "Música", "ar": "الموسيقى", "fr": "Musique", "bn": "সঙ্গীত", "pt-BR": "Música", "ru": "Музыка", "id": "Musik", "de": "Musik", "tr": "Müzik", "ko": "음악", "ja": "音楽"
+    },
+    "Calendar": {
+      "zh-Hans": "日历", "hi": "कैलेंडर", "es": "Calendario", "ar": "التقويم", "fr": "Calendrier", "bn": "ক্যালেন্ডার", "pt-BR": "Calendário", "ru": "Календарь", "id": "Kalender", "de": "Kalender", "tr": "Takvim", "ko": "캘린더", "ja": "カレンダー"
+    },
+    "Shelf": {
+      "zh-Hans": "收纳架", "hi": "शेल्फ़", "es": "Estante", "ar": "الرف", "fr": "Étagère", "bn": "শেলফ", "pt-BR": "Prateleira", "ru": "Полка", "id": "Rak", "de": "Ablage", "tr": "Raf", "ko": "보관함", "ja": "シェルフ"
+    },
+    "Camera": {
+      "zh-Hans": "相机", "hi": "कैमरा", "es": "Cámara", "ar": "الكاميرا", "fr": "Caméra", "bn": "ক্যামেরা", "pt-BR": "Câmera", "ru": "Камера", "id": "Kamera", "de": "Kamera", "tr": "Kamera", "ko": "카메라", "ja": "カメラ"
+    },
+    "Wallpapers": {
+      "zh-Hans": "壁纸", "hi": "वॉलपेपर", "es": "Fondos de pantalla", "ar": "الخلفيات", "fr": "Fonds d’écran", "bn": "ওয়ালপেপার", "pt-BR": "Papéis de parede", "ru": "Обои", "id": "Wallpaper", "de": "Hintergründe", "tr": "Duvar kâğıtları", "ko": "배경화면", "ja": "壁紙"
     }
   }
 }

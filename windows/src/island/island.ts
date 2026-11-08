@@ -2,22 +2,23 @@
 // Mirrors IslandRootView.swift + IslandWindowController.swift.
 
 import { Tracked, Spring, clamp } from "../core/anim";
-import { Bridge, IS_TAURI, onDragDrop } from "../core/bridge";
+import { Bridge, IS_TAURI, onDragDrop, type DragDropPayload } from "../core/bridge";
 import {
   EXPANDED_CORNER, EXPANDED_W, NOTCH_W, PANEL_H, PANEL_W,
   ROUNDED_CORNER, VIEW_LAYOUTS, botGlowColor, botGlowOpacity, botPosition, chatPromptHeight,
   islandSize,
   QUESTION_PICKER_H,
-  type BotEmoteName, type IslandMode, type IslandViewName,
+  type BotEmoteName, type BotStateName, type IslandMode, type IslandViewName,
 } from "../core/layout";
 import { Sound } from "../core/sound";
 import { State } from "../core/state";
 import { SPOTIFY_ID, islandDances } from "../core/spotify";
-import { BotEngine, hexToRGB } from "../mochi/engine";
+import { BOT_BODY_WIDTH_RATIO, BotEngine, hexToRGB } from "../mochi/engine";
 import { Greeting } from "../mochi/greeting";
 import { createMiniBot, pruneMiniBots, syncMiniBotStates, tickMiniBots } from "../mochi/minibots";
 import { SeasonCache, parseOutfit } from "../mochi/wardrobe";
 import { UploadCanvas } from "../upload/canvas";
+import { sizeBotCanvas } from "./bot-canvas";
 import { USC, UploadSeq } from "../upload/sequence";
 import { dominantPct, planColor } from "../core/plan";
 import { tl } from "../i18n/i18n";
@@ -34,6 +35,9 @@ import { Updates } from "./update";
 import { UPDATE_BLUE, showsUpdateHint } from "../whats-new/whats-new";
 
 const BOT_OVERHANG = 40;
+const BOT_DRAW_WIDTH = Math.round(
+  Math.max(...Object.values(VIEW_LAYOUTS).map((layout) => layout.botDiameter)) / BOT_BODY_WIDTH_RATIO,
+);
 const UPDATE_BLUE_RGB = hexToRGB(UPDATE_BLUE);
 const CLAUDE_DESKTOP_ID = "agent_claude-desktop";
 /** Extra canvas on each side of Mochi, for the witch hat's brim and the Santa hat's tip. */
@@ -90,9 +94,7 @@ export class Island {
   private running = false;
   private lastFrame = 0;
   private dirty = true;
-  private canvasPx = 0;
-  /** The pixel ratio Mochi's bitmap was sized for: it changes with the monitor. */
-  private canvasDpr = 0;
+  private botCanvasCache = { canvasPx: 0, canvasDpr: 0 };
 
   // Rust starts the window at full size so the launch greeting has room.
   private collapsed = false;
@@ -123,6 +125,8 @@ export class Island {
 
   /** The next reveal from hidden makes no peek (music starting, as on macOS). */
   private silentReveal = false;
+  /** Playback reported by the Music tab's active MPRIS player. */
+  private musicPagePlaying = false;
 
   /** Drop sequence bookkeeping: last tick played, and whether the ✓ has fired. */
   private uploadTens = 0;
@@ -144,6 +148,20 @@ export class Island {
       this.onGreetingDone?.();
     };
     State.subscribe(() => {
+      this.dirty = true;
+      this.ensureRunning();
+    });
+    window.addEventListener("ax-music-playback", (event) => {
+      if (State.view !== "music") return;
+      const playing = (event as CustomEvent<boolean>).detail === true;
+      if (this.musicPagePlaying === playing) return;
+      this.musicPagePlaying = playing;
+      this.dirty = true;
+      this.ensureRunning();
+    });
+    window.addEventListener("ax-island-view", (event) => {
+      if ((event as CustomEvent).detail === "music" || !this.musicPagePlaying) return;
+      this.musicPagePlaying = false;
       this.dirty = true;
       this.ensureRunning();
     });
@@ -382,8 +400,12 @@ export class Island {
         case "petit":
           if (from === "coucou") this.greeting.interrupt();
           else if (from === "hidden" && !this.silentReveal) Sound.play("peek");
+          // Leave one canonical view active before compact mode is announced.
+          // If a card view (chat, wallpapers, etc.) remains `.on` while the
+          // shell switches modes, its expanded layout survives under the
+          // compact capsule and can leak into the next allocation.
+          State.view = State.defaultView();
           this.setMode("compact");
-          if (from === "coucou") State.view = State.defaultView();
           if (!this.wasInIsland) this.fsm.mouseLeft();
           break;
         case "home":
@@ -413,6 +435,7 @@ export class Island {
     const prev = State.mode;
     if (mode === prev) return;
     State.mode = mode;
+    (window as unknown as { __axIslandMode?: string }).__axIslandMode = mode;
     if (mode === "expanded") Sound.play("open");
     if (prev === "expanded") {
       Sound.play("close");
@@ -490,8 +513,8 @@ export class Island {
       this.foldApproval();
       return;
     }
-    State.isPinned = false;
-    this.fsm.pinned = false;
+    State.isPinned = true;
+    this.fsm.pinned = true;
     // Drive the state machine rather than the mode: setting the mode behind its
     // back left it thinking the island was still open, and a click on the compact
     // island then did nothing — the island could never be reopened.
@@ -575,6 +598,19 @@ export class Island {
     this.ensureRunning();
   }
 
+  /** Kibo's current state drives the same Mochi state used by the agent pills. */
+  setKiboState(state: BotStateName | null) {
+    State.stateOverride = state;
+    State.notify();
+    this.ensureRunning();
+  }
+
+  /** Keep Kibo's current emotion on Mochi using the engine's existing permanent emote. */
+  setKiboEmote(emote: BotEmoteName | null) {
+    this.engine.setPermanentEmote(emote);
+    this.ensureRunning();
+  }
+
   /** Ctrl+P: keep the open island from folding away, or let it fold again. */
   setPinned(on: boolean) {
     State.isPinned = on;
@@ -615,7 +651,7 @@ export class Island {
 
   // ── File drop ───────────────────────────────────────────────────────────────
 
-  private onDragDrop(e: { type: string; paths?: string[] }) {
+  private onDragDrop(e: DragDropPayload) {
     if (e.type !== "over") void Bridge.log(`drag ${e.type} ${e.paths?.length ?? 0} file(s)`);
     if (State.paused) return;
     switch (e.type) {
@@ -881,7 +917,7 @@ export class Island {
     window.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && State.mode === "expanded") {
         if (State.pendingApproval) this.foldApproval();
-        else if (!State.isPinned) this.collapse();
+        else this.collapse();
       }
       State.lastActivity = performance.now();
     });
@@ -1113,7 +1149,7 @@ export class Island {
     const p = botPosition(State.mode, State.view, this.height.value, State.uploadProgress);
     this.botCx.target = p.cx;
     this.botCy.target = p.cy;
-    this.botSize.target = p.diameter / 0.6;
+    this.botSize.target = p.diameter / BOT_BODY_WIDTH_RATIO;
 
     const greetingActive = State.mode === "expanded" && State.view === "greeting";
     // The drop canvas draws its own Mochi; two of them would overlap. Out on the
@@ -1140,21 +1176,17 @@ export class Island {
   private drawBot(dt: number) {
     const size = this.botSize.value;
     const w = Math.max(1, Math.round(size));
-    const hCss = w + BOT_OVERHANG;
-    const wCss = w + BOT_SIDE * 2;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    // Drawn at the current ratio, so a bitmap sized for another monitor's
-    // would show Mochi too big and cut, or too small.
-    if (this.canvasPx !== w || this.canvasDpr !== dpr) {
-      this.canvasPx = w;
-      this.canvasDpr = dpr;
-      this.botCanvas.width = Math.round(wCss * dpr);
-      this.botCanvas.height = Math.round(hCss * dpr);
-      this.botCanvas.style.width = `${wCss}px`;
-      this.botCanvas.style.height = `${hCss}px`;
-    }
+    // Supersample Mochi at 4× for smoother edges, preserving CSS size and shape.
+    const dpr = Math.max(4, window.devicePixelRatio || 1);
+    const { width: wCss, height: hCss, drawingInset } = sizeBotCanvas(
+      this.botCanvas, w, dpr, this.botCanvasCache, BOT_SIDE, BOT_OVERHANG, BOT_DRAW_WIDTH,
+    );
     this.botCanvas.style.left = `${this.botCx.value - wCss / 2}px`;
-    this.botCanvas.style.top = `${this.botCy.value - BOT_OVERHANG / 2 - hCss / 2}px`;
+    const scale = w / BOT_DRAW_WIDTH;
+    const compactScaleOffset = State.mode === "compact"
+      ? (1 - scale) * BOT_OVERHANG / 2
+      : 0;
+    this.botCanvas.style.top = `${this.botCy.value - BOT_OVERHANG / 2 - hCss / 2 + compactScaleOffset}px`;
 
     const ctx = this.botCanvas.getContext("2d");
     if (!ctx) return;
@@ -1195,7 +1227,7 @@ export class Island {
     // Dances while music plays: always in the compact island, expanded only on
     // the music pill's card (BotCanvasView, macOS). Asked every frame.
     this.engine.setDancing(islandDances({
-      music: State.spotifyPlaying,
+      music: State.view === "music" ? this.musicPagePlaying || State.spotifyPlaying : State.spotifyPlaying,
       state: State.effectiveState,
       mode: State.mode,
       view: State.view,
@@ -1209,10 +1241,15 @@ export class Island {
     // through it (a hat in a roll) piled up there into a coloured bar.
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.botCanvas.width, this.botCanvas.height);
-    ctx.setTransform(dpr, 0, 0, dpr, BOT_SIDE * dpr, 0);
+    const drawWidth = w;
+    const drawHeight = drawWidth + BOT_OVERHANG;
+    // Rasterize at the final size inside the fixed bitmap instead of shrinking
+    // a large CSS layer; this keeps the silhouette crisp without canvas resizes.
+    const drawingYOffset = drawingInset - (1 - scale) * BOT_OVERHANG / 2;
+    ctx.setTransform(dpr, 0, 0, dpr, (BOT_SIDE + drawingInset) * dpr, drawingYOffset * dpr);
     ctx.save();
-    this.engine.applyDance(ctx, w, hCss);
-    this.engine.draw(ctx, w, hCss);
+    this.engine.applyDance(ctx, drawWidth, drawHeight);
+    this.engine.draw(ctx, drawWidth, drawHeight);
     ctx.restore();
   }
 
@@ -1274,6 +1311,7 @@ export class Island {
     if (this.lastSyncedView !== State.view) {
       const wasChat = this.lastSyncedView === "prompt";
       this.lastSyncedView = State.view;
+      window.dispatchEvent(new CustomEvent("ax-island-view", { detail: State.view }));
       if (State.view === "prompt") {
         void Bridge.focusWindow(true);
         window.setTimeout(() => this.views.get("prompt")?.focus?.(), 120);

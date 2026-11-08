@@ -21,12 +21,14 @@ import { lastTextStep } from "../core/diff";
 import { Bridge } from "../core/bridge";
 import { buildRecap } from "./recap";
 import { buildWardrobe } from "./wardrobe";
+import { buildWallpapers } from "./wallpapers";
 import { buildUpdate } from "./update";
 import { buildWhatsNew } from "./whatsnew";
 import { buildSpotifyCard, buildSpotifyPill, type SpotifyPillHost } from "./spotify";
 import { SPOTIFY_ID } from "../core/spotify";
 import { buildWhatsAppCard } from "./whatsapp";
 import { WHATSAPP_ID } from "../core/whatsapp";
+import { buildCalendarView, buildCameraView, buildMusicView, buildShelfView, buildSystemView, buildMusicWidget } from "./workspace";
 import { MAIL_ID } from "../core/mail";
 import { buildMailCard } from "./mail";
 import type { Outfit, OutfitSelection } from "../mochi/wardrobe";
@@ -120,6 +122,12 @@ export function buildHeader(actions: ViewActions): ViewHost {
   const tabHome = h("button", { class: "tab", title: tl("Overview"), onclick: () => go("overview") }, svg(ICONS.house, 13));
   const tabChat = h("button", { class: "tab", title: tl("Ask"), onclick: () => go("prompt") }, svg(ICONS.bubble, 13));
   const tabDrop = h("button", { class: "tab", title: tl("Drop"), onclick: () => go("upload") }, svg(ICONS.plus, 13));
+  const tabWallpapers = h("button", { class: "tab", title: tl("Wallpapers"), onclick: () => go("wallpapers") }, svg(ICONS.wallpaper, 13));
+  const tabMusic = h("button", { class: "tab", title: tl("Music"), onclick: () => go("music") }, svg(ICONS.musicNote, 13));
+  const tabCalendar = h("button", { class: "tab", title: tl("Calendar"), onclick: () => go("calendar") }, svg(ICONS.calendar, 13));
+  const tabShelf = h("button", { class: "tab", title: tl("Shelf"), onclick: () => go("shelf") }, svg(ICONS.folder, 13));
+  const tabSystem = h("button", { class: "tab", title: tl("System"), onclick: () => go("system") }, svg(ICONS.system, 13));
+  const tabCamera = h("button", { class: "tab", title: tl("Camera"), onclick: () => go("camera") }, svg(ICONS.camera, 13));
 
   const gearBtn = h("button", { title: tl("Settings"), onclick: () => go("settings") }, svg(ICONS.gear, 14));
   const soundBtn = h("button", { title: tl("Mute"), onclick: () => actions.toggleSound() }, svg(ICONS.speakerOn, 14));
@@ -137,7 +145,7 @@ export function buildHeader(actions: ViewActions): ViewHost {
   const el = h(
     "div",
     { id: "header" },
-    h("div", { class: "tabs" }, tabHome, tabChat, tabDrop),
+    h("div", { class: "tabs" }, tabHome, tabChat, tabDrop, tabWallpapers, tabMusic, tabCalendar, tabShelf, tabSystem, tabCamera),
     h("div", { class: "header-actions" }, planPills, gearBtn, soundBtn),
   );
   const headerActions = el.lastElementChild as HTMLElement;
@@ -149,6 +157,12 @@ export function buildHeader(actions: ViewActions): ViewHost {
       tabHome.classList.toggle("on", v === "overview" || v === "empty");
       tabChat.classList.toggle("on", v === "prompt");
       tabDrop.classList.toggle("on", v === "upload");
+      tabWallpapers.classList.toggle("on", v === "wallpapers");
+      tabMusic.classList.toggle("on", v === "music");
+      tabCalendar.classList.toggle("on", v === "calendar");
+      tabShelf.classList.toggle("on", v === "shelf");
+      tabSystem.classList.toggle("on", v === "system");
+      tabCamera.classList.toggle("on", v === "camera");
       gearBtn.classList.toggle("on", v === "settings");
       clear(gearBtn);
       gearBtn.append(svg(v === "settings" ? ICONS.gearFill : ICONS.gear, 14));
@@ -201,7 +215,20 @@ function buildOverview(actions: ViewActions): ViewHost {
   );
   const left = card(null, leftBody, jump);
   const pills = h("div", { class: "pills" });
-  const right = card(null, pills);
+  const musicWidget = buildMusicWidget();
+  musicWidget.el.classList.add("overview-music-widget");
+  let selectedWidget = 0;
+  const widgetPrev = h("button", { class: "widget-arrow previous", title: "Previous widget", text: "<", onclick: (e: Event) => { e.stopPropagation(); selectedWidget = selectedWidget ? 0 : 1; syncWidgets(); } });
+  const widgetNext = h("button", { class: "widget-arrow next", title: "Next widget", text: ">", onclick: (e: Event) => { e.stopPropagation(); selectedWidget = selectedWidget ? 0 : 1; syncWidgets(); } });
+  const right = card(null, pills, musicWidget.el, widgetPrev, widgetNext);
+  function syncWidgets() {
+    pills.hidden = selectedWidget !== 0;
+    musicWidget.el.hidden = selectedWidget !== 1;
+    if (selectedWidget === 1) musicWidget.start();
+    else musicWidget.stop();
+  }
+  window.addEventListener("ax-island-view", (event) => { if ((event as CustomEvent).detail !== "overview") musicWidget.stop(); });
+  syncWidgets();
   // Opened from a plan pill in the header: stands in for the left card.
   const plan = new PlanCard();
   let planTimer: number | null = null;
@@ -441,6 +468,7 @@ function buildOverview(actions: ViewActions): ViewHost {
         pruneMiniBots();
       }
       spotifyPill?.sync();
+      if (selectedWidget === 1) musicWidget.sync();
     },
   };
 }
@@ -856,8 +884,14 @@ export function buildViews(
   map.set("choose", buildChoose(actions));
   map.set("recap", buildRecap(actions));
   map.set("wardrobe", buildWardrobe(actions));
+  map.set("wallpapers", buildWallpapers(actions));
   map.set("update", buildUpdate());
   map.set("whatsNew", buildWhatsNew());
+  map.set("music", buildMusicView());
+  map.set("calendar", buildCalendarView());
+  map.set("shelf", buildShelfView());
+  map.set("system", buildSystemView());
+  map.set("camera", buildCameraView());
   // Not in the Windows v1: sending a file by email, window attach + web result.
   map.set("mail", buildPlaceholder(tl("Sending by email isn't in this version."), ""));
   map.set("searching", buildPlaceholder(tl("Claude is searching…"), ""));

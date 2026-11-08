@@ -650,6 +650,8 @@ interface WebView2Bridge {
  * as a `file-drag` event. Elsewhere (Linux) Tauri's own drag events still do it.
  */
 export async function onDragDrop(handler: (e: DragDropPayload) => void) {
+  // The Ax-Shell host is a GTK layer-shell window. GTK owns external file
+  // drops there; its native handler forwards the accepted wallpaper to Island.
   if (!IS_TAURI) return () => {};
   const webview = (window as unknown as { chrome?: { webview?: WebView2Bridge } }).chrome?.webview;
   if (!webview) {

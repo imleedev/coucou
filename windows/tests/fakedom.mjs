@@ -89,9 +89,18 @@ class FakeElement {
   append(...nodes) {
     for (const n of nodes) {
       const node = typeof n === "string" ? new FakeText(n) : n;
+      node.parentNode?.removeChild(node);
       node.parentNode = this;
       this.childNodes.push(node);
     }
+  }
+  insertBefore(node, reference) {
+    node.parentNode?.removeChild(node);
+    node.parentNode = this;
+    const index = reference == null ? -1 : this.childNodes.indexOf(reference);
+    if (index < 0) this.childNodes.push(node);
+    else this.childNodes.splice(index, 0, node);
+    return node;
   }
   prepend(...nodes) {
     const added = nodes.map((n) => (typeof n === "string" ? new FakeText(n) : n));
@@ -143,6 +152,13 @@ export function installFakeDom() {
     createElementNS: (ns, tag) => new FakeElement(tag, ns),
     createTextNode: (text) => new FakeText(text),
     body: new FakeElement("body"),
+  };
+  const listeners = new Map();
+  globalThis.addEventListener = (type, fn) => listeners.set(type, [...(listeners.get(type) ?? []), fn]);
+  globalThis.removeEventListener = (type, fn) => listeners.set(type, (listeners.get(type) ?? []).filter((item) => item !== fn));
+  globalThis.dispatchEvent = (event) => {
+    for (const fn of listeners.get(event.type) ?? []) fn(event);
+    return true;
   };
   return { root: () => new FakeElement("div") };
 }

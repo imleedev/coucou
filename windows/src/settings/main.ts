@@ -928,16 +928,33 @@ function integrationsSection(present: Record<string, boolean>): HTMLElement {
       }) as HTMLInputElement;
       const saveBtn = h("button", { text: t("Save") });
       const dotEl = statusDot(present[field.key] ?? false);
+      const feedback = h("div", { class: "hint" });
       saveBtn.addEventListener("click", async () => {
         const value = input.value.trim();
+        clear(feedback);
         try {
           await Bridge.secretSet(field.key, value);
           present[field.key] = value.length > 0;
           input.value = "";
           input.placeholder = value ? CHAT_STRINGS.stored : field.placeholder;
           dotEl.style.background = value ? "#22c55e" : "#f4505e";
-        } catch {
+          feedback.textContent = value ? t("Saved securely.") : t("Key removed.");
+        } catch (err) {
           dotEl.style.background = "#f5a524";
+          feedback.textContent = t("Could not save: {error}", { error: String(err).replace(/^Error:\s*/, "") });
+          return;
+        }
+
+        // Refresh through the existing integration command so a newly saved
+        // credential is reflected immediately instead of waiting for its timer.
+        if (value && settings.activeIntegrations.includes(def.id)) {
+          feedback.textContent = t("Saved. Checking connection…");
+          try {
+            await Bridge.refreshIntegration(def.id);
+            feedback.textContent = t("Saved. Integration refreshed.");
+          } catch (err) {
+            feedback.textContent = t("Saved, but refresh failed: {error}", { error: String(err).replace(/^Error:\s*/, "") });
+          }
         }
       });
       rows.append(
@@ -945,6 +962,7 @@ function integrationsSection(present: Record<string, boolean>): HTMLElement {
           h("label", { style: "min-width:104px", text: t(field.label) }),
           input, saveBtn, dotEl,
         ),
+        feedback,
       );
     }
 

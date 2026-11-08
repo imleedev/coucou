@@ -9,7 +9,7 @@
 import { h, svg, clear } from "./dom";
 import { ICONS } from "./icons";
 import { renderMarkdown } from "./markdown";
-import { Bridge, onEvent, type ChatContext, type ModelInfo } from "../core/bridge";
+import { Bridge, IS_TAURI, onEvent, type ChatContext, type ModelInfo } from "../core/bridge";
 import {
   activeModel, pickModel, providerDef, visibleProviders, withModel, type ProviderDef,
 } from "../core/providers";
@@ -267,16 +267,23 @@ export function buildPrompt(onHeightChange: () => void): ViewHost {
   // A local model answers token by token: where its text so far is shown.
   let live: HTMLElement | null = null;
 
+  function kiboChatSend(): ((text: string) => Promise<string>) | undefined {
+    if (IS_TAURI || (State.chatHistory.length === 0 && State.droppedFile)) return undefined;
+    return (window as Window & { __axKiboChatSend?: (text: string) => Promise<string> }).__axKiboChatSend;
+  }
+
   function drawModelButton() {
+    const sendToKibo = kiboChatSend();
     const p = providerDef(State.settings.chatProvider);
-    modelDot.style.background = p.accent;
-    modelName.textContent = chipLabel(State.settings, activeModel(State.settings)) || t(STRINGS.noModel);
-    modelBtn.classList.toggle("open", picker.isOpen);
+    modelDot.style.background = sendToKibo ? "#66e3a2" : p.accent;
+    modelName.textContent = sendToKibo ? "Kibo" : chipLabel(State.settings, activeModel(State.settings)) || t(STRINGS.noModel);
+    modelBtn.title = sendToKibo ? "Conversa com o Kibo" : t(STRINGS.switchModel);
+    modelBtn.classList.toggle("open", !sendToKibo && picker.isOpen);
     modelBtn.disabled = sending;
   }
 
   modelBtn.addEventListener("click", () => {
-    if (sending) return;
+    if (sending || kiboChatSend()) return;
     if (picker.isOpen) picker.close();
     else picker.open();
   });
@@ -311,8 +318,11 @@ export function buildPrompt(onHeightChange: () => void): ViewHost {
       State.chatHistory.length === 1 && file ? { kind: "file", name: file.name, path: file.path } : null;
 
     try {
-      const reply = await Bridge.chatSend(query, context, MailChat.on && HOST_OS === "windows");
-      State.chatHistory.push({ id: nextId++, role: "assistant", content: reply.text });
+      const sendToKibo = kiboChatSend();
+      const replyText = sendToKibo
+        ? await sendToKibo(query)
+        : (await Bridge.chatSend(query, context, MailChat.on && HOST_OS === "windows")).text;
+      State.chatHistory.push({ id: nextId++, role: "assistant", content: replyText });
       State.stateOverride = null;
       Sound.play("finish");
     } catch (err) {

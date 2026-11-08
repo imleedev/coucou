@@ -10,7 +10,7 @@
 import { Bridge, emitToWindow, onEvent, type DesktopMode } from "../core/bridge";
 import type { BotEmoteName } from "../core/layout";
 import { Sound } from "../core/sound";
-import { BotEngine } from "../mochi/engine";
+import { BOT_BODY_WIDTH_RATIO, BotEngine } from "../mochi/engine";
 import {
   DESKTOP_EVENTS, DOUBLE_CLICK_MS, DRAG_THRESHOLD, PANEL_SIZE, agentActive, gaze, isOverBody,
   layerDragTopLeft, lookOrigin, pointerDistance, shouldSleep, windowDragTopLeft,
@@ -19,12 +19,8 @@ import {
 
 const ISLAND = "island";
 
-/**
- * Width Mochi is drawn at. The engine's body radius is 0.3 × width, so this
- * gives the 28.8 px body the hit test uses, and leaves room around him for
- * hats, hands and hearts inside the 120 px window.
- */
-const DRAW_W = PANEL_SIZE * 0.8;
+/** Draw the body to the hit-test diameter, leaving the remaining window for effects. */
+const DRAW_W = PANEL_SIZE * 0.48 / BOT_BODY_WIDTH_RATIO;
 const SIDE = (PANEL_SIZE - DRAW_W) / 2;
 /** Frame pacing: TimelineView(minimumInterval: 1/30) awake; asleep, barely. */
 const AWAKE_FRAME_MS = 1000 / 30;

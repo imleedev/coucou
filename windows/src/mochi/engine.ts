@@ -14,7 +14,8 @@ import type { Outfit } from "./wardrobe";
 
 export type EyeShape =
   | "pill" | "wide" | "dot" | "line" | "flat" | "happy" | "closed"
-  | "spiral" | "heart" | "star" | "tired" | "wink" | "cup";
+  | "spiral" | "heart" | "star" | "tired" | "wink" | "cup"
+  | "angry" | "sad" | "scared" | "confused" | "curious" | "thinking" | "sleepy" | "excited";
 
 export type BadgeKind = "dots" | "bang" | "question" | "dot" | "arrow";
 
@@ -72,6 +73,10 @@ const BASE_BOTTOM: RGB = [0.769, 0.773, 0.792]; // #C4C5CA
 const INK = "rgb(26,20,18)"; // #1A1412
 const MINI_INK = "rgb(16,19,26)"; // #10131A
 
+// The body's horizontal diameter is 2 × R × 1.14, with R = 0.3 × canvas width.
+// Use this exact draw ratio when sizing Mochi so the requested diameter is real.
+export const BOT_BODY_WIDTH_RATIO = 0.684;
+
 const C = {
   idle: [0.902, 0.914, 0.933] as RGB,
   working: [0.231, 0.62, 1] as RGB,
@@ -114,7 +119,9 @@ export const STATE_SOUND: Partial<Record<BotStateName, string>> = {
 
 const EMOTE_EYE: Record<BotEmoteName, EyeShape> = {
   love: "heart", surprised: "dot", proud: "star", wink: "wink",
-  yawn: "tired", happy: "happy", annoyed: "line",
+  yawn: "tired", happy: "happy", annoyed: "line", angry: "angry",
+  sad: "sad", scared: "scared", confused: "confused", curious: "curious",
+  thinking: "thinking", sleepy: "sleepy", excited: "excited", listening: "wide",
 };
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
@@ -441,6 +448,9 @@ export class BotEngine {
   setPermanentEmote(emote: BotEmoteName | null) {
     this.permanentEmote = emote;
     if (emote === "wink") {
+      this.permanentEye = null;
+      this.eyeOverride = null;
+      this.eyeOverrideUntil = 0;
       this.miniNextBehavior = now() + 0.8 + Math.random() * 1.7;
       return;
     }
@@ -472,6 +482,11 @@ export class BotEngine {
         this.anim("oy", [[-0.3, 140, Ease.out], [0, 380, Ease.back]]);
         this.anim("es", [[1.25, 120, Ease.out], [1, 500, Ease.inOut]]);
         break;
+      case "excited":
+        this.emit("spark", 3);
+        this.anim("oy", [[-0.2, 120, Ease.out], [0.02, 180, Ease.inOut], [0, 220, Ease.back]]);
+        this.anim("sy", [[1.1, 100, Ease.out], [0.94, 140, Ease.inOut], [1, 220, Ease.back]]);
+        break;
       case "proud":
         this.emit("star", 5);
         this.anim("tilt", [
@@ -494,9 +509,38 @@ export class BotEngine {
       case "happy":
         this.anim("blush", [[0.6, 200, Ease.out], [0, 600, Ease.inOut]]);
         break;
+      case "listening":
+        this.anim("tilt", [[-0.07, 180, Ease.out], [-0.07, (duration - 0.4) * 1000, Ease.lin], [0, 240, Ease.inOut]]);
+        this.anim("es", [[1.12, 200, Ease.out], [1, 500, Ease.inOut]]);
+        break;
+      case "confused":
+        this.anim("tilt", [[-0.12, 180, Ease.out], [0.16, 360, Ease.inOut], [0.04, 300, Ease.out]]);
+        break;
+      case "curious":
+        this.anim("yaw", [[0.2, 200, Ease.out], [0.12, 400, Ease.inOut]]);
+        this.anim("pitch", [[-0.08, 220, Ease.out], [0, 400, Ease.inOut]]);
+        break;
+      case "sad":
+        this.anim("pitch", [[0.1, 220, Ease.inOut], [0.04, 380, Ease.out]]);
+        break;
+      case "scared":
+        this.anim("sx", [[1.06, 90, Ease.out], [0.98, 180, Ease.inOut], [1, 240, Ease.out]]);
+        this.anim("sy", [[1.08, 90, Ease.out], [0.98, 180, Ease.inOut], [1, 240, Ease.out]]);
+        break;
+      case "angry":
+        this.anim("yaw", [[-0.18, 90, Ease.out], [0.18, 120, Ease.inOut], [0, 200, Ease.out]]);
+        break;
+      case "thinking":
+        this.anim("yaw", [[-0.1, 220, Ease.out], [0.16, 420, Ease.inOut], [0.05, 350, Ease.out]]);
+        this.anim("pitch", [[-0.12, 260, Ease.out], [-0.06, 480, Ease.inOut]]);
+        break;
+      case "sleepy":
+        this.anim("sy", [[0.96, 300, Ease.inOut], [1, 500, Ease.inOut]]);
+        break;
       case "annoyed":
         this.eyeOverride = "line";
         this.eyeOverrideUntil = t + 0.8;
+        this.anim("yaw", [[-0.16, 90, Ease.out], [0.16, 120, Ease.inOut], [0, 190, Ease.out]]);
         setTimeout(() => Sound.play("annoyed"), 60);
         break;
     }
@@ -667,7 +711,11 @@ export class BotEngine {
       this.tgSx = 1;
     }
 
-    if (this.isMini && n > this.miniNextBehavior) this.doMiniBehaviorLoop();
+    const dynamicEmote = this.permanentEmote && [
+      "angry", "sad", "scared", "confused", "curious", "thinking", "sleepy", "excited",
+    ].includes(this.permanentEmote);
+    if (dynamicEmote && n > this.miniNextBehavior) this.doEmotionBehaviorLoop();
+    else if (this.isMini && n > this.miniNextBehavior) this.doMiniBehaviorLoop();
 
     const kLook = 1 - Math.pow(0.0025, dt);
     if (!this.locks.has("yaw")) this.yaw += (this.tgYaw - this.yaw) * kLook;
@@ -766,6 +814,57 @@ export class BotEngine {
     }
   }
 
+  /** Small recurring reactions keep Kibo's expression alive in compact and expanded views. */
+  private doEmotionBehaviorLoop() {
+    const n = now();
+    switch (this.permanentEmote) {
+      case "angry":
+      case "annoyed":
+        if (!this.locks.has("yaw")) this.anim("yaw", [
+          [-0.22, 90, Ease.out], [0.2, 120, Ease.inOut], [0, 180, Ease.out],
+        ]);
+        this.miniNextBehavior = n + 2.8 + Math.random() * 2.2;
+        break;
+      case "sad":
+        if (!this.locks.has("pitch")) this.anim("pitch", [[0.1, 220, Ease.inOut], [0.04, 380, Ease.out]]);
+        this.miniNextBehavior = n + 3.8 + Math.random() * 2.2;
+        break;
+      case "scared":
+        if (!this.locks.has("sx")) this.anim("sx", [[1.06, 90, Ease.out], [0.98, 180, Ease.inOut], [1, 240, Ease.out]]);
+        if (!this.locks.has("sy")) this.anim("sy", [[1.08, 90, Ease.out], [0.98, 180, Ease.inOut], [1, 240, Ease.out]]);
+        this.miniNextBehavior = n + 2.4 + Math.random() * 1.8;
+        break;
+      case "confused":
+        if (!this.locks.has("tilt")) this.anim("tilt", [[-0.12, 180, Ease.out], [0.16, 360, Ease.inOut], [0.08, 260, Ease.out]]);
+        this.miniNextBehavior = n + 3 + Math.random() * 2;
+        break;
+      case "curious":
+        if (!this.locks.has("yaw")) this.anim("yaw", [[0.2, 200, Ease.out], [0.12, 400, Ease.inOut]]);
+        if (!this.locks.has("pitch")) this.anim("pitch", [[-0.08, 220, Ease.out], [0, 400, Ease.inOut]]);
+        this.miniNextBehavior = n + 3.2 + Math.random() * 2;
+        break;
+      case "thinking":
+        if (!this.locks.has("yaw")) this.anim("yaw", [[-0.1, 220, Ease.out], [0.16, 420, Ease.inOut], [0.05, 350, Ease.out]]);
+        if (!this.locks.has("pitch")) this.anim("pitch", [[-0.12, 260, Ease.out], [-0.06, 480, Ease.inOut]]);
+        this.miniNextBehavior = n + 3.2 + Math.random() * 1.8;
+        break;
+      case "sleepy":
+        if (this.eyeOverrideUntil !== Number.POSITIVE_INFINITY) {
+          this.eyeOverride = "closed";
+          this.eyeOverrideUntil = n + 0.38;
+        }
+        this.miniNextBehavior = n + 3.5 + Math.random() * 2;
+        break;
+      case "excited":
+        if (!this.locks.has("oy")) this.anim("oy", [[-0.18, 120, Ease.out], [0.02, 180, Ease.inOut], [0, 220, Ease.back]]);
+        this.emit("spark", 2);
+        this.miniNextBehavior = n + 2 + Math.random() * 1.4;
+        break;
+      default:
+        this.miniNextBehavior = n + 3 + Math.random() * 2;
+    }
+  }
+
   // ── Dancing ─────────────────────────────────────────────────────────────────
 
   setDancing(dancing: boolean) {
@@ -854,14 +953,16 @@ export class BotEngine {
   }
 
   private bodyPath(rx: number, ry: number, R: number): Path2D {
-    const n = 72;
+    const n = 360;
     const expN = 2.0 / 2.7;
+    const curveStep = 3;
     const tw = R * 1.0;
     const th = R * 0.94;
     const tr = R * 0.42;
     const p = new Path2D();
     const m = this.morph;
-    for (let i = 0; i <= n; i++) {
+    const points: { x: number; y: number }[] = [];
+    for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2;
       const ca = Math.cos(a);
       const sa = Math.sin(a);
@@ -874,8 +975,29 @@ export class BotEngine {
         px = lerp(px0, rr.x, m);
         py = lerp(py0, rr.y, m);
       }
-      if (i === 0) p.moveTo(px, py);
-      else p.lineTo(px, py);
+      points.push({ x: px, y: py });
+    }
+
+    // The sampled contour above preserves the existing superellipse and its
+    // morph. Fit a closed Catmull–Rom path through every third sample so the
+    // silhouette remains the same while its edge is rendered as smooth cubic
+    // vectors instead of hundreds of visible straight joins.
+    const anchors = points.filter((_, i) => i % curveStep === 0);
+    const count = anchors.length;
+    p.moveTo(anchors[0].x, anchors[0].y);
+    for (let i = 0; i < count; i++) {
+      const previous = anchors[(i - 1 + count) % count];
+      const start = anchors[i];
+      const end = anchors[(i + 1) % count];
+      const next = anchors[(i + 2) % count];
+      p.bezierCurveTo(
+        start.x + (end.x - previous.x) / 6,
+        start.y + (end.y - previous.y) / 6,
+        end.x - (next.x - start.x) / 6,
+        end.y - (next.y - start.y) / 6,
+        end.x,
+        end.y,
+      );
     }
     p.closePath();
     return p;
@@ -1003,6 +1125,53 @@ export class BotEngine {
         x.rotate(-sd * 0.2);
         roundRectPath(x, -w * 0.78, -w * 0.21, w * 1.56, w * 0.42, w * 0.21);
         x.fill();
+        break;
+      case "angry":
+        // Brows angle toward the nose, so anger reads clearly even on the tiny Mochi.
+        x.rotate(sd * 0.34);
+        roundRectPath(x, -w * 0.78, -h * 0.18, w * 1.56, h * 0.48, h * 0.22);
+        x.fill();
+        break;
+      case "sad":
+        x.lineWidth = w * 0.43;
+        x.lineCap = "round";
+        x.beginPath();
+        x.arc(0, -h * 0.52, w * 0.78, Math.PI * 0.12, Math.PI * 0.88);
+        x.stroke();
+        break;
+      case "scared":
+        x.beginPath();
+        x.ellipse(0, 0, w * 0.58, h * 0.76, 0, 0, Math.PI * 2);
+        x.fill();
+        break;
+      case "confused":
+        if (sd < 0) {
+          x.rotate(-0.18);
+          roundRectPath(x, -w * 0.72, -h * 0.2, w * 1.44, h * 0.42, h * 0.2);
+          x.fill();
+        } else {
+          x.beginPath();
+          x.arc(0, 0, w * 0.42, 0, Math.PI * 2);
+          x.fill();
+        }
+        break;
+      case "curious":
+        x.beginPath();
+        x.ellipse(0, 0, w * 0.52, h * 0.72, 0, 0, Math.PI * 2);
+        x.fill();
+        break;
+      case "thinking":
+        x.rotate(-sd * 0.14);
+        roundRectPath(x, -w * 0.57, -h * 0.05, w * 1.14, h * 0.68, h * 0.3);
+        x.fill();
+        break;
+      case "sleepy":
+        x.rotate(-sd * 0.16);
+        roundRectPath(x, -w * 0.72, -h * 0.02, w * 1.44, h * 0.3, h * 0.14);
+        x.fill();
+        break;
+      case "excited":
+        this.drawEyeShape(x, "star", w * 0.95, h * 0.95, sd, ink);
         break;
       case "flat":
         roundRectPath(x, -w * 0.72, -w * 0.2, w * 1.44, w * 0.4, w * 0.2);

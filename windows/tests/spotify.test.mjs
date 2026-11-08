@@ -104,6 +104,8 @@ test("the island's Mochi dances by the Mac's rules", () => {
   // Expanded: only on the overview, with the music pill in front.
   assert.ok(!islandDances({ ...base, mode: "expanded" }));
   assert.ok(islandDances({ ...base, mode: "expanded", focusId: SPOTIFY_ID }));
+  assert.ok(islandDances({ ...base, mode: "expanded", view: "music" }), "the Music tab animates Mochi during playback");
+  assert.ok(!islandDances({ ...base, mode: "expanded", view: "music", state: "error" }), "Kibo's error state takes precedence over the music dance");
   assert.ok(!islandDances({ ...base, mode: "expanded", focusId: SPOTIFY_ID, view: "prompt" }));
 });
 

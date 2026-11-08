@@ -400,6 +400,8 @@ pub fn apply_geometry(app: &AppHandle, pref: &str, collapsed: bool) {
     // still offers the user nothing to resize it by. (Found by @YossiYad, #44.)
     #[cfg(target_os = "linux")]
     let _ = win.set_resizable(true);
+    #[cfg(target_os = "linux")]
+    platform::remember_island_size(lw.round() as i32, lh.round() as i32);
     let _ = win.set_size(PhysicalSize::new(pw, ph));
     let _ = win.set_position(PhysicalPosition::new(x, y));
     let (lx, ly) = logical_origin(&m);

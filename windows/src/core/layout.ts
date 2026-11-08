@@ -24,8 +24,14 @@ export type IslandViewName =
   | "greeting"
   | "recap"
   | "wardrobe"
+  | "wallpapers"
   | "update"
-  | "whatsNew";
+  | "whatsNew"
+  | "music"
+  | "calendar"
+  | "shelf"
+  | "system"
+  | "camera";
 
 export type BotStateName =
   | "idle"
@@ -40,7 +46,9 @@ export type BotStateName =
   | "sleeping"
   | "dizzy";
 
-export type BotEmoteName = "love" | "surprised" | "proud" | "wink" | "yawn" | "happy" | "annoyed";
+export type BotEmoteName =
+  | "love" | "surprised" | "proud" | "wink" | "yawn" | "happy" | "annoyed"
+  | "angry" | "sad" | "scared" | "confused" | "curious" | "thinking" | "sleepy" | "excited" | "listening";
 
 export type AgentLayoutMode = "none" | "grid" | "pills" | "column";
 
@@ -60,7 +68,7 @@ export const PANEL_H = 320;
 // No notch on a PC: these are the hidden/compact sizes from docs/SPEC.md.
 export const NOTCH_W = 184;
 export const NOTCH_H = 32;
-export const COMPACT_W = 288; // NOTCH_W + 104
+export const COMPACT_W = NOTCH_W;
 export const EXPANDED_W = 640;
 
 export const ROUNDED_CORNER = 14; // hidden / compact
@@ -95,11 +103,19 @@ export const VIEW_LAYOUTS: Record<IslandViewName, ViewLayout> = {
   // to the shared image.
   recap: { height: 184, botX: 62, botY: null, botDiameter: 58, agentMode: "column" },
   wardrobe: { height: 160, botX: 68, botY: null, botDiameter: 58, agentMode: "none" },
+  wallpapers: { height: 184, botX: 62, botY: null, botDiameter: 50, agentMode: "none" },
   // New version: Mochi on the left, the version and Update now (Mac: .update).
   update: { height: 160, botX: 62, botY: null, botDiameter: 58, agentMode: "none" },
   // After an update: what the new version brings, then "Your Coucou so far".
   // Taller than a card, for two rows of items with their line.
   whatsNew: { height: 222, botX: 62, botY: null, botDiameter: 58, agentMode: "none" },
+  // Music leaves the left side of its card free and parks Mochi in the open
+  // header slot beside the window controls.
+  music: { height: 320, botX: 502, botY: 24, botDiameter: 38, agentMode: "none" },
+  calendar: { height: 240, botX: 62, botY: null, botDiameter: 46, agentMode: "none" },
+  shelf: { height: 184, botX: 62, botY: null, botDiameter: 46, agentMode: "none" },
+  system: { height: 184, botX: 62, botY: null, botDiameter: 46, agentMode: "none" },
+  camera: { height: 184, botX: 62, botY: null, botDiameter: 46, agentMode: "none" },
 };
 
 // The upload views above are only the fallback geometry. Once a file is actually
@@ -151,7 +167,9 @@ export function botPosition(
     case "hidden":
       return { cx: 46, cy: 16, diameter: 6, opacity: 0 };
     case "compact":
-      return { cx: 40, cy: 16, diameter: 20, opacity: 1 };
+      // Keep Mochi near the dock's left corner with a visible inset, and give
+      // the compact face a little more presence beside the agent pills.
+      return { cx: 30, cy: 16, diameter: 24, opacity: 1 };
     case "expanded": {
       const layout = VIEW_LAYOUTS[view];
       if (view === "uploading") {

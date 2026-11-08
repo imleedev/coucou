@@ -101,7 +101,7 @@ const DANCE_STATES: ReadonlySet<BotStateName> = new Set(["idle", "working", "thi
 
 /**
  * The island's Mochi (BotCanvasView, macOS): in the compact island whenever
- * music plays, expanded only on the overview with the music pill in front.
+ * music plays, on the overview with its pill focused, and in the Music tab.
  */
 export function islandDances(o: {
   music: boolean;
@@ -112,6 +112,7 @@ export function islandDances(o: {
 }): boolean {
   if (!o.music || !DANCE_STATES.has(o.state)) return false;
   if (o.mode === "compact") return true;
+  if (o.mode === "expanded" && o.view === "music") return true;
   return o.mode === "expanded" && o.view === "overview" && o.focusId === SPOTIFY_ID;
 }
 
