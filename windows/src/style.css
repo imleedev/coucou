@@ -621,6 +621,12 @@ body {
   animation-play-state: paused;
 }
 
+/* The expanded content is transparent and clipped in compact/hidden modes.
+   Pause even the selected view until it becomes visible again. */
+#views.collapsed .view * {
+  animation-play-state: paused !important;
+}
+
 /* ── Cards ──────────────────────────────────────────────────────────────── */
 
 .card {

@@ -1285,6 +1285,9 @@ export class Island {
     const expanded = State.mode === "expanded";
     const greetingActive = expanded && State.view === "greeting";
 
+    // Expanded views are visually clipped in compact/hidden modes, so their
+    // CSS animations should not keep the embedded WebKit surface repainting.
+    this.viewsEl.classList.toggle("collapsed", !expanded);
     const live = expanded && !greetingActive;
     this.contentEl.style.opacity = live ? "1" : "0";
     // While the drop sequence owns the body its buttons are painted on the canvas
