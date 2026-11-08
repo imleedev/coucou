@@ -13,6 +13,18 @@ type Media = {
 };
 const noMedia: Media = { player: "", title: "", artist: "", album: "", art: null, status: "Stopped", position: 0, duration: 0, shuffle: false, repeat: false, canSeek: false };
 
+function musicIcon(name: "previous" | "play" | "pause" | "next" | "shuffle" | "repeat", size: number) {
+  const paths = {
+    previous: "M6 5h2v14H6zM19.2 6.1c.5-.4 1.3 0 1.3.7v11.4c0 .7-.8 1.1-1.3.7L10 13.2a1.4 1.4 0 0 1 0-2.4z",
+    play: ICONS.play,
+    pause: ICONS.pause,
+    next: "M16 5h2v14h-2zM4.8 6.1c-.5-.4-1.3 0-1.3.7v11.4c0 .7.8 1.1 1.3.7L14 13.2a1.4 1.4 0 0 0 0-2.4z",
+    shuffle: ICONS.shuffle,
+    repeat: ICONS.repeat,
+  } as const;
+  return svg(paths[name], size, name === "shuffle" || name === "repeat" ? { stroke: 1.9 } : undefined);
+}
+
 async function api<T>(path: string, method = "GET", data?: unknown): Promise<T> {
   const response = await fetch(path, {
     method, cache: "no-store",
@@ -47,7 +59,10 @@ class MediaSource {
     const now = Date.now();
     if (this.pending || (!force && now - this.lastRequest < 1000)) return;
     this.pending = true; this.lastRequest = now;
-    try { this.state = (await api<{ media: Media }>("/api/media")).media ?? { ...noMedia }; }
+    try {
+      const current = (await api<{ media: Media }>("/api/media")).media;
+      this.state = current?.player?.toLowerCase() === "spotify" ? current : { ...noMedia };
+    }
     catch { this.state = { ...noMedia }; }
     finally { this.pending = false; }
     this.publishPlayback();
@@ -221,7 +236,7 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
   const cover = h("img", { class: "music-experience-cover", alt: "Album cover" }) as HTMLImageElement;
   const coverPlaceholder = h("div", { class: "music-cover-placeholder", text: "♫" });
   const vinyl = h("img", { class: "music-artwork-vinyl", src: musicVinyl, alt: "" }) as HTMLImageElement;
-  const artworkHint = h("span", { class: "music-artwork-play-hint", "aria-hidden": "true" }, svg(ICONS.play, 13));
+  const artworkHint = h("span", { class: "music-artwork-play-hint", "aria-hidden": "true" }, musicIcon("play", 13));
   const coverFrame = h("button", {
     class: "music-cover-frame music-artwork-card",
     type: "button",
@@ -230,13 +245,13 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
     onclick: () => void media.control("play-pause").then(render),
   }, vinyl, cover, coverPlaceholder, artworkHint) as HTMLButtonElement;
   const title = h("h1", { class: "music-experience-title", text: "No media playing" });
-  const artist = h("div", { class: "music-experience-artist", text: "Play music in Spotify or another MPRIS player" });
+  const artist = h("div", { class: "music-experience-artist", text: "Play music in Spotify" });
   const album = h("div", { class: "music-experience-album" });
-  const shuffle = h("button", { class: "music-small-control", title: "Shuffle", "aria-label": "Shuffle", onclick: () => void media.setting("shuffle", !media.state.shuffle).then(render) }, svg(ICONS.shuffle, 15));
-  const previous = h("button", { class: "music-transport", title: tl("Previous track"), onclick: () => void media.control("previous").then(render) }, svg(ICONS.backward, 18));
-  const play = h("button", { class: "music-play-control", title: t("Play"), onclick: () => void media.control("play-pause").then(render) }, svg(ICONS.play, 17));
-  const next = h("button", { class: "music-transport", title: tl("Next track"), onclick: () => void media.control("next").then(render) }, svg(ICONS.forward, 18));
-  const repeat = h("button", { class: "music-small-control", title: "Repeat", "aria-label": "Repeat", onclick: () => void media.setting("repeat", !media.state.repeat).then(render) }, svg(ICONS.repeat, 15));
+  const shuffle = h("button", { class: "music-small-control", title: "Shuffle", "aria-label": "Shuffle", onclick: () => void media.setting("shuffle", !media.state.shuffle).then(render) }, musicIcon("shuffle", 15));
+  const previous = h("button", { class: "music-transport", title: tl("Previous track"), "aria-label": tl("Previous track"), onclick: () => void media.control("previous").then(render) }, musicIcon("previous", 18));
+  const play = h("button", { class: "music-play-control", title: t("Play"), "aria-label": t("Play"), onclick: () => void media.control("play-pause").then(render) }, musicIcon("play", 17));
+  const next = h("button", { class: "music-transport", title: tl("Next track"), "aria-label": tl("Next track"), onclick: () => void media.control("next").then(render) }, musicIcon("next", 18));
+  const repeat = h("button", { class: "music-small-control", title: "Repeat", "aria-label": "Repeat", onclick: () => void media.setting("repeat", !media.state.repeat).then(render) }, musicIcon("repeat", 15));
   const controls = h("div", { class: "music-experience-controls" }, shuffle, previous, play, next, repeat);
   const elapsed = h("span", { text: "0:00" });
   const remaining = h("span", { text: "−0:00" });
@@ -346,11 +361,11 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
       trackKey = key; lyricsRequest++; lyrics = { lines: [], synced: false, instrumental: false }; lyricState = "idle"; renderedLyricsKey = "";
       if (mode === "lyrics" || mode === "split") void loadLyrics();
     }
-    title.textContent = state.title || (state.player ? "Nothing playing" : "No media player found");
-    artist.textContent = state.artist || (state.player ? state.player : "Start playback in any MPRIS player");
+    title.textContent = state.title || (state.player ? "Nothing playing" : "No Spotify playback");
+    artist.textContent = state.artist || (state.player ? state.player : "Start playback in Spotify");
     album.textContent = state.album;
     album.hidden = !state.album;
-    provider.textContent = state.player || "NO PLAYER CONNECTED";
+    provider.textContent = state.player || "SPOTIFY";
     updatePalette(state.art, key);
     if (state.art && cover.src !== new URL(state.art, window.location.href).href) {
       cover.src = state.art; backdrop.src = state.art;
@@ -362,8 +377,8 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
     coverFrame.setAttribute("aria-label", state.status === "Playing"
       ? `Pause ${state.title || "current track"}${state.artist ? ` by ${state.artist}` : ""}`
       : `Play ${state.title || "current track"}${state.artist ? ` by ${state.artist}` : ""}`);
-    artworkHint.replaceChildren(svg(state.status === "Playing" ? ICONS.pause : ICONS.play, 13));
-    play.replaceChildren(svg(state.status === "Playing" ? ICONS.pause : ICONS.play, 17));
+    artworkHint.replaceChildren(musicIcon(state.status === "Playing" ? "pause" : "play", 13));
+    play.replaceChildren(musicIcon(state.status === "Playing" ? "pause" : "play", 17));
     play.title = state.status === "Playing" ? t("Pause") : t("Play");
     for (const button of [previous, play, next, shuffle, repeat]) button.disabled = !state.player;
     shuffle.classList.toggle("active", state.shuffle); repeat.classList.toggle("active", state.repeat);
