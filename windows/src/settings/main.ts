@@ -441,7 +441,7 @@ function apiSection(hasKey: boolean, relay: boolean): HTMLElement {
   async function refresh() {
     const present = (await Bridge.secretPresent("anthropic-api-key")) ?? false;
     const ready = (await Bridge.claudeReady()) ?? false;
-    dot.style.background = ready ? "#22c55e" : "#f4505e";
+    dot.style.background = ready ? "#22c55e" : "var(--red)";
     state.textContent = apiState(present, ready && !present);
     field.placeholder = present ? `••••••••••••  ${t("(stored)")}` : "sk-ant-...";
     clearBtn.style.display = present ? "" : "none";
@@ -632,7 +632,7 @@ function chatProvidersSection(
     const removeBtn = h("button", { class: "danger", text: CHAT_STRINGS.remove });
     const refresh = () => {
       input.placeholder = present[key] ? CHAT_STRINGS.stored : def.placeholder;
-      dotEl.style.background = present[key] ? "#22c55e" : "#f4505e";
+      dotEl.style.background = present[key] ? "#22c55e" : "var(--red)";
       removeBtn.style.display = present[key] ? "" : "none";
     };
     saveBtn.addEventListener("click", async () => {
@@ -937,7 +937,7 @@ function integrationsSection(present: Record<string, boolean>): HTMLElement {
           present[field.key] = value.length > 0;
           input.value = "";
           input.placeholder = value ? CHAT_STRINGS.stored : field.placeholder;
-          dotEl.style.background = value ? "#22c55e" : "#f4505e";
+          dotEl.style.background = value ? "#22c55e" : "var(--red)";
           feedback.textContent = value ? t("Saved securely.") : t("Key removed.");
         } catch (err) {
           dotEl.style.background = "#f5a524";

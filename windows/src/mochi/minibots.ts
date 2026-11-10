@@ -75,6 +75,13 @@ export function syncMiniBotStates(tasks: AgentTask[]) {
 export function tickMiniBots(dt: number) {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   for (const mb of live.values()) {
+    // The island keeps its animation loop alive for Mochi while expanded, but
+    // only mini canvases in the selected, visible view need to be repainted.
+    // Hidden pages otherwise rasterize every agent on every frame off-screen.
+    if (mb.canvas.closest("#views.collapsed")) continue;
+    const view = mb.canvas.closest(".view");
+    if (view && !view.classList.contains("on")) continue;
+    if (mb.canvas.closest("[hidden]")) continue;
     const ctx = mb.canvas.getContext("2d");
     if (!ctx) continue;
     mb.engine.setDancing(mb.dancing?.() ?? false);

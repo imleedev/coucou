@@ -222,8 +222,8 @@ body {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #ff453a;
-  box-shadow: 0 0 3px rgba(255, 69, 58, 0.6);
+  background: #ff4d5a;
+  box-shadow: 0 0 3px rgba(255, 77, 90, 0.6);
   flex: 0 0 8px;
 }
 

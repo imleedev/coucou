@@ -2,6 +2,10 @@
 // Drawn on a 24×24 grid so they read at the same optical size.
 
 export const ICONS = {
+  grid: "M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z",
+  bluetooth: "M7 7l10 10-5 5V2l5 5L7 17",
+  wrench: "M21 7.5a6 6 0 0 1-7.9 5.7L7 19.3a2.1 2.1 0 0 1-3-3l6.1-6.1A6 6 0 0 1 17.5 3l-3.7 3.7 3.5 3.5L21 7.5z",
+  terminal: "M4 5h16v14H4V5zm3 4 3 3-3 3m5 0h4",
   // house.fill
   house: "M12 3.2 2.8 10.6V21h6.6v-5.4h5.2V21h6.6V10.6L12 3.2z",
   // bubble.left.fill

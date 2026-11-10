@@ -17,7 +17,8 @@
   --card: #141518;
   --hairline: rgba(255, 255, 255, 0.07);
   --green: #22c55e;
-  --red: #f4505e;
+  --red: #ff4d5a;
+  --red-text: var(--red);
   --amber: #f5a524;
 }
 
@@ -131,8 +132,8 @@ button.primary:hover:not(:disabled) {
 }
 
 button.danger {
-  background: rgba(244, 80, 94, 0.16);
-  color: #ff8d97;
+  background: color-mix(in srgb, var(--red) 16%, transparent);
+  color: var(--red-text);
 }
 
 button:disabled {
@@ -241,7 +242,7 @@ select option {
 }
 
 .diff .del {
-  color: #ff8d97;
+  color: var(--red-text);
 }
 
 .diff .ctx {
@@ -260,8 +261,8 @@ select option {
 }
 
 .notice.err {
-  background: rgba(244, 80, 94, 0.14);
-  color: #ff8d97;
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+  color: var(--red-text);
 }
 
 .notice.warn {
@@ -418,8 +419,8 @@ select option {
 }
 
 .tag.err {
-  background: rgba(244, 80, 94, 0.14);
-  color: #ff8d97;
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+  color: var(--red-text);
 }
 
 /* Arabic: the window reads right to left (main.ts sets <html dir="rtl">);

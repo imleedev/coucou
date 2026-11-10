@@ -141,7 +141,7 @@ export function planColor(pct: number | null): string {
   if (pct == null) return "#6B7079";
   if (pct < 50) return "#22C55E";
   if (pct < 80) return "#F59E0B";
-  return "#F4505E";
+  return "var(--red)";
 }
 
 /** "Claude 73%" / "Codex 12%" on the pill; "Claude —" while there are no numbers. */

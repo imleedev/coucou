@@ -104,6 +104,9 @@ export class Island {
   private holdingOpen = false;
   /** Last shape handed to Rust for the click-through test. */
   private pushedRect = { x: -1, y: -1, w: -1, h: -1 };
+  /** Input-region updates run through GTK; coalesce them while visual geometry stays frame-smooth. */
+  private lastPushedRectAt = 0;
+  private lastAppliedGeometry = { w: Number.NaN, h: Number.NaN, r: Number.NaN };
 
   // Bot hover → love (IslandWindowController.botHoverIn)
   private botHovering = false;
@@ -127,6 +130,8 @@ export class Island {
   private silentReveal = false;
   /** Playback reported by the Music tab's active MPRIS player. */
   private musicPagePlaying = false;
+  /** Reduce canvas work while the host reports real system memory pressure. */
+  private memoryPressure = false;
 
   /** Drop sequence bookkeeping: last tick played, and whether the ✓ has fired. */
   private uploadTens = 0;
@@ -163,6 +168,12 @@ export class Island {
       if ((event as CustomEvent).detail === "music" || !this.musicPagePlaying) return;
       this.musicPagePlaying = false;
       this.dirty = true;
+      this.ensureRunning();
+    });
+    window.addEventListener("ax-memory-pressure", (event) => {
+      const pressured = (event as CustomEvent<boolean>).detail === true;
+      if (this.memoryPressure === pressured) return;
+      this.memoryPressure = pressured;
       this.ensureRunning();
     });
   }
@@ -781,13 +792,15 @@ export class Island {
   private animateGeometry(shrinking: boolean) {
     const { w, h, r } = this.targetSize();
     if (shrinking) {
-      this.width.curveTowards(w);
-      this.height.curveTowards(h);
-      this.radius.curveTowards(r);
+      this.width.curveTowards(w, 340);
+      this.height.curveTowards(h, 340);
+      this.radius.curveTowards(r, 340);
     } else {
-      this.width.springTo(w);
-      this.height.springTo(h);
-      this.radius.springTo(r);
+      // Match IslandContainer.openSpring in the Mac reference: the shorter,
+      // heavier spring feels abrupt in the browser-hosted Linux notch.
+      this.width.springTo(w, 0.5, 0.72);
+      this.height.springTo(h, 0.5, 0.72);
+      this.radius.springTo(r, 0.5, 0.72);
     }
     this.ensureRunning();
   }
@@ -796,23 +809,35 @@ export class Island {
     const w = this.width.value;
     const hh = this.height.value;
     const r = this.radius.value;
-    this.islandEl.style.width = `${w}px`;
-    this.islandEl.style.height = `${hh}px`;
-    this.islandEl.style.borderRadius = `0 0 ${r}px ${r}px`;
-    this.islandEl.style.transform = `translateX(-50%)`;
+    const previous = this.lastAppliedGeometry;
+    const changedW = !Number.isFinite(previous.w) || Math.abs(w - previous.w) >= 0.05;
+    const changedH = !Number.isFinite(previous.h) || Math.abs(hh - previous.h) >= 0.05;
+    const changedR = !Number.isFinite(previous.r) || Math.abs(r - previous.r) >= 0.05;
+    if (changedW) this.islandEl.style.width = `${w}px`;
+    if (changedH) this.islandEl.style.height = `${hh}px`;
+    if (changedR) this.islandEl.style.borderRadius = `0 0 ${r}px ${r}px`;
+    this.lastAppliedGeometry = { w, h: hh, r };
     // These follow the island as it resizes, so they belong here rather than in
     // the state-driven DOM sync.
-    this.miniGrid.style.left = `${w - 40 - 14.5}px`;
-    this.miniGrid.style.top = `${hh / 2 - 14.5}px`;
-    this.clockEl.style.height = `${hh}px`;
-    this.greetingCanvas.style.left = `${(w - EXPANDED_W) / 2}px`;
-    this.uploadCanvas.el.style.left = `${(w - EXPANDED_W) / 2}px`;
+    if (changedW) {
+      this.miniGrid.style.left = `${w - 40 - 14.5}px`;
+      this.greetingCanvas.style.left = `${(w - EXPANDED_W) / 2}px`;
+      this.uploadCanvas.el.style.left = `${(w - EXPANDED_W) / 2}px`;
+    }
+    if (changedH) {
+      this.miniGrid.style.top = `${hh / 2 - 14.5}px`;
+      this.clockEl.style.height = `${hh}px`;
+    }
 
     const viewportW = window.innerWidth > 0 ? window.innerWidth : PANEL_W;
     const rect = { x: (viewportW - w) / 2, y: 0, w, h: hh };
     const p = this.pushedRect;
-    if (Math.abs(p.x - rect.x) > 0.5 || Math.abs(p.w - rect.w) > 0.5 || Math.abs(p.h - rect.h) > 0.5) {
+    const rectChanged = Math.abs(p.x - rect.x) > 0.5 || Math.abs(p.w - rect.w) > 0.5 || Math.abs(p.h - rect.h) > 0.5;
+    const settled = !this.width.animating && !this.height.animating && !this.radius.animating;
+    const now = performance.now();
+    if (rectChanged && (settled || now - this.lastPushedRectAt >= 30)) {
       this.pushedRect = rect;
+      this.lastPushedRectAt = now;
       void Bridge.setIslandRect(rect.x, rect.y, rect.w, rect.h);
     }
   }
@@ -1138,7 +1163,14 @@ export class Island {
         greetingActive || this.engine.busy || UploadSeq.isActive || viewAnimating;
 
     if (busy) {
-      requestAnimationFrame(this.frame);
+      if (this.memoryPressure) {
+        // The system memory monitor can report pressure before WebKit starts
+        // stalling. Keep the island responsive while halving its continuous
+        // canvas/layout work until pressure clears.
+        window.setTimeout(() => requestAnimationFrame(this.frame), 1000 / 30);
+      } else {
+        requestAnimationFrame(this.frame);
+      }
     } else {
       this.running = false;
       Sound.idle();
@@ -1176,8 +1208,9 @@ export class Island {
   private drawBot(dt: number) {
     const size = this.botSize.value;
     const w = Math.max(1, Math.round(size));
-    // Supersample Mochi at 4× for smoother edges, preserving CSS size and shape.
-    const dpr = Math.max(4, window.devicePixelRatio || 1);
+    // Keep the edge vector-crisp at 3×–4× while avoiding unnecessary canvas work
+    // on standard and 2× displays during full-rate Mochi motion.
+    const dpr = Math.max(3, Math.min(4, window.devicePixelRatio || 1));
     const { width: wCss, height: hCss, drawingInset } = sizeBotCanvas(
       this.botCanvas, w, dpr, this.botCanvasCache, BOT_SIDE, BOT_OVERHANG, BOT_DRAW_WIDTH,
     );

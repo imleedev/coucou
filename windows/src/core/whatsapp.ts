@@ -199,7 +199,7 @@ export function linkColor(link: WaLink): string {
     case "connecting":
     case "needsQr": return "#F5B83D";
     case "off": return "#6B7079";
-    default: return "#F4505E";
+    default: return "var(--red)";
   }
 }
 

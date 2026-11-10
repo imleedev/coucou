@@ -31,7 +31,11 @@ export type IslandViewName =
   | "calendar"
   | "shelf"
   | "system"
-  | "camera";
+  | "camera"
+  | "apps"
+  | "devices"
+  | "tools"
+  | "workspace";
 
 export type BotStateName =
   | "idle"
@@ -112,11 +116,15 @@ export const VIEW_LAYOUTS: Record<IslandViewName, ViewLayout> = {
   whatsNew: { height: 222, botX: 62, botY: null, botDiameter: 58, agentMode: "none" },
   // Music leaves the left side of its card free and parks Mochi in the open
   // header slot beside the window controls.
-  music: { height: 288, botX: 534, botY: 24, botDiameter: 38, agentMode: "none" },
+  music: { height: 288, botX: 538, botY: 32, botDiameter: 38, agentMode: "none" },
   calendar: { height: 240, botX: 62, botY: null, botDiameter: 46, agentMode: "none" },
   shelf: { height: 184, botX: 62, botY: null, botDiameter: 46, agentMode: "none" },
   system: { height: 184, botX: 62, botY: null, botDiameter: 46, agentMode: "none" },
   camera: { height: 184, botX: 62, botY: null, botDiameter: 46, agentMode: "none" },
+  apps: { height: 240, botX: 62, botY: null, botDiameter: 46, agentMode: "none" },
+  devices: { height: 184, botX: 62, botY: null, botDiameter: 46, agentMode: "none" },
+  tools: { height: 184, botX: 62, botY: 0, botDiameter: 0, agentMode: "none" },
+  workspace: { height: 240, botX: 62, botY: null, botDiameter: 46, agentMode: "none" },
 };
 
 // The upload views above are only the fallback geometry. Once a file is actually
@@ -173,6 +181,9 @@ export function botPosition(
       return { cx: 30, cy: 16, diameter: 24, opacity: 1 };
     case "expanded": {
       const layout = VIEW_LAYOUTS[view];
+      if (layout.botDiameter <= 0) {
+        return { cx: layout.botX, cy: layout.botY ?? 0, diameter: 0, opacity: 0 };
+      }
       if (view === "uploading") {
         return {
           cx: 36 + uploadProgress * 526,
@@ -204,7 +215,7 @@ export function botGlowColor(s: BotStateName): string {
     case "approval":
       return "#F5A524";
     case "error":
-      return "#F4505E";
+      return "#FF4D5A";
     case "finished":
       return "#34D399";
     case "ratelimit":

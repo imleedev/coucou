@@ -34,6 +34,7 @@ import { buildMailCard } from "./mail";
 import type { Outfit, OutfitSelection } from "../mochi/wardrobe";
 import { language, t, tl, type Msg } from "../i18n/i18n";
 import type { ViewCommand } from "../island/shortcuts";
+import { buildAppsView, buildDevicesView, buildToolsView, buildWorkspaceView } from "./ax-shell";
 
 export interface ViewActions {
   setView(v: IslandViewName): void;
@@ -118,6 +119,40 @@ function stack(padLeft: number, padRight: number, ...children: Node[]): HTMLElem
 
 // ── Header ────────────────────────────────────────────────────────────────────
 
+function screenRecordingIcon(active: boolean): SVGSVGElement {
+  const ns = "http://www.w3.org/2000/svg";
+  const icon = document.createElementNS(ns, "svg");
+  icon.setAttribute("viewBox", "0 0 24 24");
+  icon.setAttribute("width", "15");
+  icon.setAttribute("height", "15");
+  icon.setAttribute("aria-hidden", "true");
+  if (active) {
+    const stop = document.createElementNS(ns, "rect");
+    stop.setAttribute("x", "6.5");
+    stop.setAttribute("y", "6.5");
+    stop.setAttribute("width", "11");
+    stop.setAttribute("height", "11");
+    stop.setAttribute("rx", "1.5");
+    stop.setAttribute("fill", "currentColor");
+    icon.append(stop);
+  } else {
+    const ring = document.createElementNS(ns, "circle");
+    ring.setAttribute("cx", "12");
+    ring.setAttribute("cy", "12");
+    ring.setAttribute("r", "9");
+    ring.setAttribute("fill", "none");
+    ring.setAttribute("stroke", "currentColor");
+    ring.setAttribute("stroke-width", "2");
+    const dot = document.createElementNS(ns, "circle");
+    dot.setAttribute("cx", "12");
+    dot.setAttribute("cy", "12");
+    dot.setAttribute("r", "4.5");
+    dot.setAttribute("fill", "currentColor");
+    icon.append(ring, dot);
+  }
+  return icon;
+}
+
 export function buildHeader(actions: ViewActions): ViewHost {
   const tabHome = h("button", { class: "tab", title: tl("Overview"), onclick: () => go("overview") }, svg(ICONS.house, 13));
   const tabChat = h("button", { class: "tab", title: tl("Ask"), onclick: () => go("prompt") }, svg(ICONS.bubble, 13));
@@ -128,9 +163,55 @@ export function buildHeader(actions: ViewActions): ViewHost {
   const tabShelf = h("button", { class: "tab", title: tl("Shelf"), onclick: () => go("shelf") }, svg(ICONS.folder, 13));
   const tabSystem = h("button", { class: "tab", title: tl("System"), onclick: () => go("system") }, svg(ICONS.system, 13));
   const tabCamera = h("button", { class: "tab", title: tl("Camera"), onclick: () => go("camera") }, svg(ICONS.camera, 13));
+  const tabApps = h("button", { class: "tab", title: "Aplicativos", onclick: () => go("apps") }, svg(ICONS.grid, 13));
+  const tabDevices = h("button", { class: "tab", title: "Dispositivos", onclick: () => go("devices") }, svg(ICONS.bluetooth, 13));
+  const tabTools = h("button", { class: "tab", title: "Ferramentas Ax-Shell", onclick: () => go("tools") }, svg(ICONS.wrench, 13));
+  const tabWorkspace = h("button", { class: "tab", title: "Espaço de trabalho", onclick: () => go("workspace") }, svg(ICONS.terminal, 13));
+  const tabButtons = [tabHome, tabChat, tabDrop, tabWallpapers, tabMusic, tabCalendar, tabShelf, tabSystem, tabCamera, tabApps, tabDevices, tabTools, tabWorkspace];
+  const tabViews: IslandViewName[] = ["overview", "prompt", "upload", "wallpapers", "music", "calendar", "shelf", "system", "camera", "apps", "devices", "tools", "workspace"];
+  const pageSize = 5;
+  let tabPage = 0;
+  let lastTabbedView: IslandViewName | null = null;
+  const tabStrip = h("div", { class: "tabs" }, ...tabButtons);
+  const previousTabs = h("button", { class: "tab-page-arrow", title: "Ícones anteriores", text: "‹", onclick: () => moveTabPage(tabPage - 1) });
+  const nextTabs = h("button", { class: "tab-page-arrow", title: "Mais ícones", text: "›", onclick: () => moveTabPage(tabPage + 1) });
+  const tabPager = h("div", { class: "tab-pager" }, previousTabs, tabStrip, nextTabs);
 
   const gearBtn = h("button", { title: tl("Settings"), onclick: () => go("settings") }, svg(ICONS.gear, 14));
   const soundBtn = h("button", { title: tl("Mute"), onclick: () => actions.toggleSound() }, svg(ICONS.speakerOn, 14));
+  const recordingBtn = h("button", { class: "recording-indicator", title: "Iniciar gravação de tela", "aria-label": "Iniciar gravação de tela" }, screenRecordingIcon(false));
+  let recordingRequest = false;
+  const setRecordingState = (active: boolean) => {
+    recordingBtn.classList.toggle("recording", active);
+    recordingBtn.title = active ? "Parar gravação de tela" : "Iniciar gravação de tela";
+    recordingBtn.setAttribute("aria-label", recordingBtn.title);
+    recordingBtn.replaceChildren(screenRecordingIcon(active));
+  };
+  const refreshRecordingState = async () => {
+    if (document.hidden) return;
+    try {
+      const response = await fetch("/api/ax-shell/status", { cache: "no-store" });
+      if (!response.ok) return;
+      const status = await response.json() as { screenRecording?: boolean; memoryPressure?: boolean };
+      setRecordingState(!!status.screenRecording);
+      window.dispatchEvent(new CustomEvent("ax-memory-pressure", { detail: status.memoryPressure === true }));
+    } catch { /* Keep the last known state during a brief local bridge reconnect. */ }
+  };
+  recordingBtn.addEventListener("click", () => {
+    if (recordingRequest) return;
+    recordingRequest = true;
+    recordingBtn.disabled = true;
+    void fetch("/api/ax-shell/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "screen-record" }) })
+      .then(async response => {
+        if (!response.ok) throw new Error("Falha ao alterar a gravação");
+        window.setTimeout(() => { void refreshRecordingState(); }, 350);
+      })
+      .catch(() => { void refreshRecordingState(); })
+      .finally(() => { recordingRequest = false; recordingBtn.disabled = false; });
+  });
+  void refreshRecordingState();
+  window.setInterval(() => { void refreshRecordingState(); }, 1200);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) void refreshRecordingState(); });
   // Plan usage pills (off by default): before the gear, Claude first, as on the Mac.
   const claudePill = buildPlanPill(false);
   const codexPill = buildPlanPill(true);
@@ -138,15 +219,42 @@ export function buildHeader(actions: ViewActions): ViewHost {
   let codexShown = false;
 
   function go(v: IslandViewName) {
+    const index = tabViews.indexOf(v);
+    if (index >= 0) moveTabPage(Math.floor(index / pageSize));
     actions.blip();
     actions.setView(v);
   }
 
+  function moveTabPage(requestedPage: number) {
+    const target = Math.max(0, Math.min(Math.ceil(tabButtons.length / pageSize) - 1, requestedPage));
+    if (target === tabPage) return;
+    const direction = Math.sign(target - tabPage);
+    tabPage = target;
+    syncTabPage();
+    tabStrip.getAnimations().forEach(animation => {
+      void animation.finished.catch(() => {});
+      animation.cancel();
+    });
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      tabStrip.animate(
+        [{ opacity: 0.45, transform: `translateX(${direction * 9}px)` }, { opacity: 1, transform: "translateX(0)" }],
+        { duration: 190, easing: "cubic-bezier(.22,1,.36,1)" },
+      );
+    }
+  }
+
+  function syncTabPage() {
+    tabButtons.forEach((button, index) => { button.hidden = Math.floor(index / pageSize) !== tabPage; });
+    previousTabs.disabled = tabPage === 0;
+    nextTabs.disabled = tabPage >= Math.ceil(tabButtons.length / pageSize) - 1;
+  }
+  syncTabPage();
+
   const el = h(
     "div",
     { id: "header" },
-    h("div", { class: "tabs" }, tabHome, tabChat, tabDrop, tabWallpapers, tabMusic, tabCalendar, tabShelf, tabSystem, tabCamera),
-    h("div", { class: "header-actions" }, planPills, gearBtn, soundBtn),
+    tabPager,
+    h("div", { class: "header-actions" }, planPills, recordingBtn, gearBtn, soundBtn),
   );
   const headerActions = el.lastElementChild as HTMLElement;
 
@@ -154,6 +262,11 @@ export function buildHeader(actions: ViewActions): ViewHost {
     el,
     sync() {
       const v = State.view;
+      if (v !== lastTabbedView) {
+        const index = tabViews.indexOf(v);
+        if (index >= 0) moveTabPage(Math.floor(index / pageSize));
+        lastTabbedView = v;
+      }
       tabHome.classList.toggle("on", v === "overview" || v === "empty");
       tabChat.classList.toggle("on", v === "prompt");
       tabDrop.classList.toggle("on", v === "upload");
@@ -163,6 +276,10 @@ export function buildHeader(actions: ViewActions): ViewHost {
       tabShelf.classList.toggle("on", v === "shelf");
       tabSystem.classList.toggle("on", v === "system");
       tabCamera.classList.toggle("on", v === "camera");
+      tabApps.classList.toggle("on", v === "apps");
+      tabDevices.classList.toggle("on", v === "devices");
+      tabTools.classList.toggle("on", v === "tools");
+      tabWorkspace.classList.toggle("on", v === "workspace");
       gearBtn.classList.toggle("on", v === "settings");
       clear(gearBtn);
       gearBtn.append(svg(v === "settings" ? ICONS.gearFill : ICONS.gear, 14));
@@ -218,14 +335,52 @@ function buildOverview(actions: ViewActions): ViewHost {
   const musicWidget = buildMusicWidget();
   musicWidget.el.classList.add("overview-music-widget");
   let selectedWidget = 0;
-  const widgetPrev = h("button", { class: "widget-arrow previous", title: "Previous widget", text: "<", onclick: (e: Event) => { e.stopPropagation(); selectedWidget = selectedWidget ? 0 : 1; syncWidgets(); } });
-  const widgetNext = h("button", { class: "widget-arrow next", title: "Next widget", text: ">", onclick: (e: Event) => { e.stopPropagation(); selectedWidget = selectedWidget ? 0 : 1; syncWidgets(); } });
+  const widgetPrev = h("button", { class: "widget-arrow previous", title: "Previous widget", text: "<", onclick: (e: Event) => { e.stopPropagation(); changeWidget(0, -1); } });
+  const widgetNext = h("button", { class: "widget-arrow next", title: "Next widget", text: ">", onclick: (e: Event) => { e.stopPropagation(); changeWidget(1, 1); } });
   const right = card(null, pills, musicWidget.el, widgetPrev, widgetNext);
+  let widgetAnimation = 0;
+  let widgetAnimations: Animation[] = [];
   function syncWidgets() {
     pills.hidden = selectedWidget !== 0;
     musicWidget.el.hidden = selectedWidget !== 1;
     if (selectedWidget === 1) musicWidget.start();
     else musicWidget.stop();
+  }
+  function changeWidget(next: number, direction: -1 | 1) {
+    if (next === selectedWidget) return;
+    widgetAnimations.forEach(animation => animation.cancel());
+    widgetAnimations = [];
+    pills.hidden = selectedWidget !== 0;
+    musicWidget.el.hidden = selectedWidget !== 1;
+    const outgoing = selectedWidget === 0 ? pills : musicWidget.el;
+    const incoming = next === 0 ? pills : musicWidget.el;
+    const token = ++widgetAnimation;
+    outgoing.hidden = false;
+    incoming.hidden = false;
+    selectedWidget = next;
+    if (next === 1) musicWidget.start();
+    else musicWidget.stop();
+
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      outgoing.hidden = true;
+      syncWidgets();
+      return;
+    }
+    const duration = 210;
+    const outAnimation = outgoing.animate(
+      [{ opacity: 1, transform: "translateX(0)" }, { opacity: 0, transform: `translateX(${-direction * 12}px)` }],
+      { duration, easing: "cubic-bezier(.32,.72,.2,1)" },
+    );
+    const inAnimation = incoming.animate(
+      [{ opacity: 0, transform: `translateX(${direction * 12}px)` }, { opacity: 1, transform: "translateX(0)" }],
+      { duration, easing: "cubic-bezier(.22,1,.36,1)" },
+    );
+    widgetAnimations = [outAnimation, inAnimation];
+    void outAnimation.finished.then(() => {
+      outAnimation.cancel();
+      if (widgetAnimation === token) outgoing.hidden = true;
+    }).catch(() => {});
+    void inAnimation.finished.then(() => inAnimation.cancel()).catch(() => {});
   }
   window.addEventListener("ax-island-view", (event) => { if ((event as CustomEvent).detail !== "overview") musicWidget.stop(); });
   syncWidgets();
@@ -511,11 +666,11 @@ function buildPill(task: AgentTask, actions: ViewActions): HTMLElement {
   });
 
   if (task.pillBadge) {
-    const colors = { approval: "#F5A524", finished: "#22C55E", error: "#F4505E" } as const;
+    const colors = { approval: "#F5A524", finished: "#22C55E", error: "var(--red)" } as const;
     const icons = { approval: ICONS.bang, finished: ICONS.check, error: ICONS.xmark } as const;
     const inner = h("i", { style: `background:${colors[task.pillBadge]}` }, svg(icons[task.pillBadge], 6, { stroke: task.pillBadge === "finished" ? 3 : 0 }));
     const badge = h("div", { class: "pill-badge" }, inner);
-    badge.style.boxShadow = `0 0 4px ${colors[task.pillBadge]}99`;
+    badge.style.boxShadow = `0 0 4px ${task.pillBadge === "error" ? "color-mix(in srgb,var(--red) 60%,transparent)" : `${colors[task.pillBadge]}99`}`;
     pill.append(badge);
   }
   return pill;
@@ -841,11 +996,11 @@ function buildSettings(actions: ViewActions): ViewHost {
       segButtons.forEach((b, i) => b.classList.toggle("on", s.autoCloseInterval === [10, 15, 30][i]));
       clear(claudeBadge);
       claudeBadge.append(
-        dot(s.hooksInstalled ? "#22C55E" : "#F4505E", 6),
+        dot(s.hooksInstalled ? "#22C55E" : "var(--red)", 6),
         h("span", { text: "Claude Code" }),
       );
       clear(apiBadge);
-      apiBadge.append(dot("#F4505E", 6), h("span", { text: "API" }));
+      apiBadge.append(dot("var(--red)", 6), h("span", { text: "API" }));
     },
   };
 }
@@ -892,6 +1047,10 @@ export function buildViews(
   map.set("shelf", buildShelfView());
   map.set("system", buildSystemView());
   map.set("camera", buildCameraView());
+  map.set("apps", buildAppsView());
+  map.set("devices", buildDevicesView());
+  map.set("tools", buildToolsView());
+  map.set("workspace", buildWorkspaceView());
   // Not in the Windows v1: sending a file by email, window attach + web result.
   map.set("mail", buildPlaceholder(tl("Sending by email isn't in this version."), ""));
   map.set("searching", buildPlaceholder(tl("Claude is searching…"), ""));

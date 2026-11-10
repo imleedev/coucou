@@ -257,7 +257,7 @@ export function whatsappSection(host: WhatsAppSettingsHost): HTMLElement {
 
     const parts: HTMLElement[] = [];
     if (v.prefs.enabled && !host.pillActive()) {
-      parts.push(h("div", { class: "hint", style: hintStyle("#F4505E"), text: t("Turn off another pill to make room for WhatsApp ({max} at most).", { max: host.maxPills }) }));
+      parts.push(h("div", { class: "hint", style: hintStyle("var(--red)"), text: t("Turn off another pill to make room for WhatsApp ({max} at most).", { max: host.maxPills }) }));
     }
     // One click: Coucou downloads GOWA, checks it and starts it. No command line.
     if (v.prefs.gateway === "gowa") parts.push(...installBlock(v));

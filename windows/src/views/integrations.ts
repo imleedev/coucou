@@ -65,11 +65,11 @@ export function idleStatus(
   chatModel: string,
 ): { label: string; color: string } {
   if (isComingSoon(id)) return { label: t("Coming soon"), color: "#6B7079" };
-  if (info?.error) return { label: info.error, color: "#F4505E" };
+  if (info?.error) return { label: info.error, color: "var(--red)" };
   const configured = info?.configured ?? false;
   const def = pillDefinition(id);
   const ok = (label: string) => ({ label, color: "#22C55E" });
-  const missing = (label: string) => ({ label, color: "#F4505E" });
+  const missing = (label: string) => ({ label, color: "var(--red)" });
   // Pills driven by hooks never have a key: they are connected once the hooks
   // are in place (Mac #183). A session replaces this card; nothing is loading.
   if (def?.connect.kind === "hooks") return configured ? ok(t("Hooks installed")) : missing(t("Hooks not installed"));
@@ -164,7 +164,7 @@ function vercelCard(onDetail: () => void): HTMLElement {
   const deployments = arr("integration_vercel", "deployments");
   const rows = h("div", { class: "int-rows" });
   deployments.slice(0, 3).forEach((d, i) => {
-    const accent = d.state === "READY" ? "#22C55E" : "#F4505E";
+    const accent = d.state === "READY" ? "#22C55E" : "var(--red)";
     const name = h("span", { class: "int-name", text: String(d.projectName ?? "") });
     const ago = h("span", { class: "int-ago", text: timeAgo(d.createdAt) });
     if (i === 0) {
@@ -184,7 +184,7 @@ function vercelCard(onDetail: () => void): HTMLElement {
 function vercelDetail(onBack: () => void): HTMLElement {
   const d = arr("integration_vercel", "deployments")[0] ?? {};
   const success = d.state === "READY";
-  const accent = success ? "#22C55E" : "#F4505E";
+  const accent = success ? "#22C55E" : "var(--red)";
   const status = success ? t("Ready") : d.state === "CANCELED" ? t("Canceled") : t("Error");
   const body = h("div", { class: "int-detail-body" });
   if (d.commitMessage) body.append(h("div", { class: "int-commit", text: String(d.commitMessage) }));
@@ -228,7 +228,7 @@ function resendCard(): HTMLElement {
   const rows = h("div", { class: "int-rows" });
   emails.slice(0, 3).forEach((e, i) => {
     const delivered = e.lastEvent === "delivered";
-    const accent = delivered ? "#22C55E" : "#F4505E";
+    const accent = delivered ? "#22C55E" : "var(--red)";
     const to = Array.isArray(e.to) ? String(e.to[0] ?? "?") : "?";
     const short = to.split("@")[0];
     const cells: Node[] = [
@@ -295,7 +295,7 @@ function stripeCard(): HTMLElement {
   const rows = h("div", { class: "int-rows tight" });
   for (const p of arr("integration_stripe", "payments")) {
     const success = p.status === "succeeded";
-    const accent = success ? "#22C55E" : "#F4505E";
+    const accent = success ? "#22C55E" : "var(--red)";
     rows.append(
       h(
         "div",
@@ -378,7 +378,7 @@ function n8nCard(task: AgentTask, onDetail: () => void, openSettings: () => void
   const hasActivity = task.steps.length > 0 && (task.state === "finished" || task.state === "error");
   if (!hasActivity) return idleCard(task, openSettings);
   const success = task.state === "finished";
-  const accent = success ? "#22C55E" : "#F4505E";
+  const accent = success ? "#22C55E" : "var(--red)";
   return h(
     "div",
     { class: "int-card" },
@@ -390,7 +390,7 @@ function n8nCard(task: AgentTask, onDetail: () => void, openSettings: () => void
         "button",
         {
           class: "int-pill",
-          style: `background:${accent}1a;border-color:${accent}38`,
+          style: `background:${success ? "#22C55E1a" : "color-mix(in srgb,var(--red) 10%,transparent)"};border-color:${success ? "#22C55E38" : "color-mix(in srgb,var(--red) 24%,transparent)"}`,
           onclick: onDetail,
         },
         dot(accent, 5),
@@ -403,7 +403,7 @@ function n8nCard(task: AgentTask, onDetail: () => void, openSettings: () => void
 
 function n8nDetail(task: AgentTask, onBack: () => void): HTMLElement {
   const success = task.state === "finished";
-  const accent = success ? "#22C55E" : "#F4505E";
+  const accent = success ? "#22C55E" : "var(--red)";
   const detail = task.steps[1];
   return h(
     "div",
@@ -416,7 +416,7 @@ function n8nDetail(task: AgentTask, onBack: () => void): HTMLElement {
       h("b", { text: task.steps[0] ?? t("Workflow") }),
       h("span", {
         class: "int-badge",
-        style: `color:${accent};background:${accent}24`,
+        style: `color:${accent};background:${success ? "#22C55E24" : "color-mix(in srgb,var(--red) 14%,transparent)"}`,
         text: success ? t("Success") : t("Failed"),
       }),
     ),

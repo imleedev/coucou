@@ -214,6 +214,8 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
   let lyricsRequest = 0;
   let renderedLyricsKey = "";
   let lyricLineElements: HTMLElement[] = [];
+  let lastScrolledLyricIndex = -1;
+  let lastLyricsMode: Mode | null = null;
   let paletteTrackKey = "";
   let paletteArt = "";
   let paletteColors = FALLBACK_MUSIC_COLORS;
@@ -248,11 +250,11 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
   const title = h("h1", { class: "music-experience-title", text: "No media playing" });
   const artist = h("div", { class: "music-experience-artist", text: "Play music in Spotify" });
   const album = h("div", { class: "music-experience-album" });
-  const shuffle = h("button", { class: "music-small-control", title: "Shuffle", "aria-label": "Shuffle", onclick: () => void media.setting("shuffle", !media.state.shuffle).then(render) }, musicIcon("shuffle", 15));
-  const previous = h("button", { class: "music-transport", title: tl("Previous track"), "aria-label": tl("Previous track"), onclick: () => void media.control("previous").then(render) }, musicIcon("previous", 18));
-  const play = h("button", { class: "music-play-control", title: t("Play"), "aria-label": t("Play"), onclick: () => void media.control("play-pause").then(render) }, musicIcon("play", 17));
-  const next = h("button", { class: "music-transport", title: tl("Next track"), "aria-label": tl("Next track"), onclick: () => void media.control("next").then(render) }, musicIcon("next", 18));
-  const repeat = h("button", { class: "music-small-control", title: "Repeat", "aria-label": "Repeat", onclick: () => void media.setting("repeat", !media.state.repeat).then(render) }, musicIcon("repeat", 15));
+  const shuffle = h("button", { class: "music-small-control", title: "Shuffle", "aria-label": "Shuffle", onclick: () => void media.setting("shuffle", !media.state.shuffle).then(render) }, musicIcon("shuffle", 21));
+  const previous = h("button", { class: "music-transport", title: tl("Previous track"), "aria-label": tl("Previous track"), onclick: () => void media.control("previous").then(render) }, musicIcon("previous", 29));
+  const play = h("button", { class: "music-play-control", title: t("Play"), "aria-label": t("Play"), onclick: () => void media.control("play-pause").then(render) }, musicIcon("play", 38));
+  const next = h("button", { class: "music-transport", title: tl("Next track"), "aria-label": tl("Next track"), onclick: () => void media.control("next").then(render) }, musicIcon("next", 29));
+  const repeat = h("button", { class: "music-small-control", title: "Repeat", "aria-label": "Repeat", onclick: () => void media.setting("repeat", !media.state.repeat).then(render) }, musicIcon("repeat", 21));
   const transport = h("div", { class: "music-transport-cluster" }, shuffle, previous, play, next, repeat);
   const lyricsControl = h("button", { class: "music-lyrics-control", title: "Lyrics", "aria-label": "Show lyrics", onclick: () => {
     mode = mode === "lyrics" || mode === "split" ? "player" : "lyrics";
@@ -397,22 +399,21 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
     progressTrack.setAttribute("aria-valuenow", String(Math.round(fraction * 100)));
     for (const [name, button] of modeButtons) button.classList.toggle("active", mode === name);
     stage.className = `music-experience-stage mode-${mode}`;
+    footer.hidden = mode === "lyrics" || mode === "split";
     lyricsPanel.hidden = !(mode === "lyrics" || mode === "split");
     lyricsHeading.textContent = lyricState === "ready" && lyrics.synced ? "Synchronized lyrics" : "Lyrics";
     lyricsMessage.hidden = lyrics.lines.length > 0;
     lyricsLinesEl.hidden = lyrics.lines.length === 0;
     if (lyrics.lines.length) {
       const index = currentLyricIndex(state.position);
-      const start = lyrics.synced ? Math.max(0, index - 2) : 0;
-      const visibleLines = lyrics.lines.slice(start, start + (lyrics.synced ? 6 : 80));
-      const windowKey = `${trackKey}:${start}:${lyrics.synced}:${state.canSeek}`;
+      const visibleLines = lyrics.lines;
+      const windowKey = `${trackKey}:${lyrics.synced}:${state.canSeek}`;
       if (windowKey !== renderedLyricsKey) {
         clear(lyricsLinesEl);
         lyricLineElements = [];
         const seekable = lyrics.synced && state.canSeek;
         for (let i = 0; i < visibleLines.length; i++) {
-          const lineIndex = start + i;
-          const current = lyrics.synced && lineIndex === index;
+          const current = lyrics.synced && i === index;
           const line = h("div", {
             class: `music-lyric-line${current ? " current" : ""}${seekable ? " seekable" : ""}`,
             text: visibleLines[i].text,
@@ -431,7 +432,17 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
         }
         renderedLyricsKey = windowKey;
       }
-      for (let i = 0; i < lyricLineElements.length; i++) lyricLineElements[i].classList.toggle("current", lyrics.synced && start + i === index);
+      for (let i = 0; i < lyricLineElements.length; i++) lyricLineElements[i].classList.toggle("current", lyrics.synced && i === index);
+      if (lyrics.synced && (mode === "lyrics" || mode === "split") && lyricLineElements[index]
+        && (lastScrolledLyricIndex !== index || lastLyricsMode !== mode)) {
+        const currentLine = lyricLineElements[index];
+        const containerRect = lyricsLinesEl.getBoundingClientRect();
+        const lineRect = currentLine.getBoundingClientRect();
+        const top = lyricsLinesEl.scrollTop + lineRect.top - containerRect.top - (lyricsLinesEl.clientHeight - lineRect.height) / 2;
+        lyricsLinesEl.scrollTo({ top, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+        lastScrolledLyricIndex = index;
+      }
+      lastLyricsMode = mode;
     }
     lyricsMessage.textContent = lyricState === "loading" ? "Searching for lyrics…"
       : lyricState === "error" ? "Lyrics could not be loaded. Select Lyrics to try again."
