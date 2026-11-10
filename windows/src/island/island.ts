@@ -1101,12 +1101,22 @@ export class Island {
   }
 
   private frame = (nowMs: number) => {
-    const dt = Math.min(0.05, (nowMs - this.lastFrame) / 1000);
+    // With pressure, skip alternate vsyncs. A timer followed by rAF added both
+    // delays together and reduced this loop to about 20 fps instead of 30.
+    if (this.memoryPressure && nowMs - this.lastFrame < 1000 / 30) {
+      requestAnimationFrame(this.frame);
+      return;
+    }
+    const elapsed = Math.max(0, (nowMs - this.lastFrame) / 1000);
+    const dt = Math.min(0.05, elapsed);
+    // Geometry and Mochi's position springs are sub-stepped, so let them catch
+    // up after a blocked frame instead of stretching the open transition out.
+    const motionDt = Math.min(1, elapsed);
     this.lastFrame = nowMs;
 
-    this.width.step(dt, nowMs);
-    this.height.step(dt, nowMs);
-    this.radius.step(dt, nowMs);
+    this.width.step(motionDt, nowMs);
+    this.height.step(motionDt, nowMs);
+    this.radius.step(motionDt, nowMs);
     this.applyGeometry();
 
     if (this.dirty) {
@@ -1115,9 +1125,9 @@ export class Island {
     }
 
     this.updateBotTargets();
-    this.botCx.step(dt);
-    this.botCy.step(dt);
-    this.botSize.step(dt);
+    this.botCx.step(motionDt);
+    this.botCy.step(motionDt);
+    this.botSize.step(motionDt);
 
     const greetingActive = State.mode === "expanded" && State.view === "greeting";
     if (greetingActive) {
@@ -1163,14 +1173,7 @@ export class Island {
         greetingActive || this.engine.busy || UploadSeq.isActive || viewAnimating;
 
     if (busy) {
-      if (this.memoryPressure) {
-        // The system memory monitor can report pressure before WebKit starts
-        // stalling. Keep the island responsive while halving its continuous
-        // canvas/layout work until pressure clears.
-        window.setTimeout(() => requestAnimationFrame(this.frame), 1000 / 30);
-      } else {
-        requestAnimationFrame(this.frame);
-      }
+      requestAnimationFrame(this.frame);
     } else {
       this.running = false;
       Sound.idle();
