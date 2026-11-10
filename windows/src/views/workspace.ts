@@ -41,6 +41,17 @@ class MediaSource {
   state: Media = { ...noMedia };
   private pending = false;
   private lastRequest = 0;
+  private optimisticPlayback: { status: "Playing" | "Paused"; expiresAt: number } | null = null;
+  private playbackSequence = 0;
+  private reconcilePlayback(current: Media): Media {
+    const optimistic = this.optimisticPlayback;
+    if (!optimistic) return current;
+    if (current.status === optimistic.status || Date.now() >= optimistic.expiresAt) {
+      this.optimisticPlayback = null;
+      return current;
+    }
+    return { ...current, status: optimistic.status };
+  }
   private publishPlayback() {
     window.dispatchEvent(new CustomEvent("ax-music-playback", { detail: this.state.status === "Playing" }));
   }
@@ -48,12 +59,12 @@ class MediaSource {
     if (IS_TAURI) {
       const s = await Bridge.spotifyRefresh();
       if (!s) return;
-      this.state = {
+      this.state = this.reconcilePlayback({
         player: s.running ? "Spotify" : "", title: s.track?.title ?? "", artist: s.track?.artist ?? "",
         album: s.track?.album ?? "", art: s.track?.artUrl ?? null, status: s.playing ? "Playing" : s.track ? "Paused" : "Stopped",
         position: s.position, duration: s.track?.duration ?? 0,
         shuffle: s.shuffle, repeat: s.repeat, canSeek: Boolean(s.track?.duration),
-      };
+      });
       this.publishPlayback();
       return;
     }
@@ -62,18 +73,33 @@ class MediaSource {
     this.pending = true; this.lastRequest = now;
     try {
       const current = (await api<{ media: Media }>("/api/media")).media;
-      this.state = current?.player?.toLowerCase() === "spotify" ? current : { ...noMedia };
+      this.state = this.reconcilePlayback(current?.player?.toLowerCase() === "spotify" ? current : { ...noMedia });
     }
     catch { this.state = { ...noMedia }; }
     finally { this.pending = false; }
     this.publishPlayback();
   }
   async control(action: "play-pause" | "previous" | "next") {
-    if (IS_TAURI) {
-      await Bridge.spotifyControl(action === "play-pause" ? "playPause" : action);
-      await this.refresh(true); return;
+    const previousStatus = this.state.status;
+    const sequence = action === "play-pause" ? ++this.playbackSequence : this.playbackSequence;
+    if (action === "play-pause") {
+      const status = previousStatus === "Playing" ? "Paused" : "Playing";
+      this.optimisticPlayback = { status, expiresAt: Date.now() + 2200 };
+      this.state = { ...this.state, status };
+      this.publishPlayback();
     }
-    try { await api("/api/media/control", "POST", { action, player: this.state.player }); } finally { await this.refresh(true); }
+    try {
+      if (IS_TAURI) await Bridge.spotifyControl(action === "play-pause" ? "playPause" : action);
+      else await api("/api/media/control", "POST", { action, player: this.state.player });
+    } catch (error) {
+      if (action === "play-pause" && sequence === this.playbackSequence) {
+        this.optimisticPlayback = null;
+        this.state = { ...this.state, status: previousStatus };
+        this.publishPlayback();
+      }
+      throw error;
+    }
+    await this.refresh(true);
   }
   async setting(action: "shuffle" | "repeat", enabled: boolean) {
     if (IS_TAURI) {
@@ -92,6 +118,12 @@ class MediaSource {
   }
 }
 const media = new MediaSource();
+
+function playPauseAndRender(render: () => void) {
+  const pending = media.control("play-pause");
+  render();
+  void pending.then(render, render);
+}
 
 function time(seconds: number) {
   const value = Math.max(0, Math.floor(seconds || 0));
@@ -172,7 +204,7 @@ function makeMusicDisplay(compact: boolean) {
   const times = h("div", { class: "music-times" }, elapsed, duration);
   const controls = h("div", { class: "music-controls" });
   const prev = h("button", { title: tl("Previous track"), onclick: () => void media.control("previous").then(render) }, svg(ICONS.backward, 11));
-  const toggle = h("button", { title: t("Play"), onclick: () => void media.control("play-pause").then(render) }, svg(ICONS.play, 11));
+  const toggle = h("button", { title: t("Play"), onclick: () => playPauseAndRender(render) }, svg(ICONS.play, 11));
   const next = h("button", { title: tl("Next track"), onclick: () => void media.control("next").then(render) }, svg(ICONS.forward, 11));
   controls.append(prev, toggle, next);
   const meta = h("div", { class: "music-meta" }, title, artist, progress, times);
@@ -245,14 +277,14 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
     type: "button",
     title: "Play or pause",
     "aria-label": "Play or pause current track",
-    onclick: () => void media.control("play-pause").then(render),
+    onclick: () => playPauseAndRender(render),
   }, vinyl, cover, coverPlaceholder, artworkHint) as HTMLButtonElement;
   const title = h("h1", { class: "music-experience-title", text: "No media playing" });
   const artist = h("div", { class: "music-experience-artist", text: "Play music in Spotify" });
   const album = h("div", { class: "music-experience-album" });
   const shuffle = h("button", { class: "music-small-control", title: "Shuffle", "aria-label": "Shuffle", onclick: () => void media.setting("shuffle", !media.state.shuffle).then(render) }, musicIcon("shuffle", 21));
   const previous = h("button", { class: "music-transport", title: tl("Previous track"), "aria-label": tl("Previous track"), onclick: () => void media.control("previous").then(render) }, musicIcon("previous", 29));
-  const play = h("button", { class: "music-play-control", title: t("Play"), "aria-label": t("Play"), onclick: () => void media.control("play-pause").then(render) }, musicIcon("play", 48));
+  const play = h("button", { class: "music-play-control", title: t("Play"), "aria-label": t("Play"), onclick: () => playPauseAndRender(render) }, musicIcon("play", 32));
   const next = h("button", { class: "music-transport", title: tl("Next track"), "aria-label": tl("Next track"), onclick: () => void media.control("next").then(render) }, musicIcon("next", 29));
   const repeat = h("button", { class: "music-small-control", title: "Repeat", "aria-label": "Repeat", onclick: () => void media.setting("repeat", !media.state.repeat).then(render) }, musicIcon("repeat", 21));
   const transport = h("div", { class: "music-transport-cluster" }, shuffle, previous, play, next, repeat);
@@ -387,8 +419,9 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
       ? `Pause ${state.title || "current track"}${state.artist ? ` by ${state.artist}` : ""}`
       : `Play ${state.title || "current track"}${state.artist ? ` by ${state.artist}` : ""}`);
     artworkHint.replaceChildren(musicIcon(state.status === "Playing" ? "pause" : "play", 13));
-    play.replaceChildren(musicIcon(state.status === "Playing" ? "pause" : "play", 48));
+    play.replaceChildren(musicIcon(state.status === "Playing" ? "pause" : "play", 32));
     play.title = state.status === "Playing" ? t("Pause") : t("Play");
+    play.setAttribute("aria-label", play.title);
     for (const button of [previous, play, next, shuffle, repeat]) button.disabled = !state.player;
     lyricsControl.classList.toggle("active", mode === "lyrics" || mode === "split");
     shuffle.classList.toggle("active", state.shuffle); repeat.classList.toggle("active", state.repeat);
