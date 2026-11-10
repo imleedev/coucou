@@ -16,8 +16,8 @@ const noMedia: Media = { player: "", title: "", artist: "", album: "", art: null
 function musicIcon(name: "previous" | "play" | "pause" | "next" | "shuffle" | "repeat" | "lyrics", size: number) {
   const paths = {
     previous: "M10 5.2c.55-.4 1.3 0 1.3.7v12.2c0 .7-.75 1.1-1.3.7L3.1 13.5a1.45 1.45 0 0 1 0-2.3zM18 5.2c.55-.4 1.3 0 1.3.7v12.2c0 .7-.75 1.1-1.3.7l-6.9-5.3a1.45 1.45 0 0 1 0-2.3z",
-    play: ICONS.play,
-    pause: "M5.25 4.5h4.9v15h-4.9zM13.85 4.5h4.9v15h-4.9z",
+    play: "M2.1 3.4A3.4 3.4 0 0 1 7.2.5l14.9 9.1a2.8 2.8 0 0 1 0 4.8L7.2 23.5a3.4 3.4 0 0 1-5.1-2.9z",
+    pause: "M5.4 0h.8a3.5 3.5 0 0 1 3.5 3.5v17A3.5 3.5 0 0 1 6.2 24h-.8A3.5 3.5 0 0 1 1.9 20.5v-17A3.5 3.5 0 0 1 5.4 0zM17.8 0h.8a3.5 3.5 0 0 1 3.5 3.5v17a3.5 3.5 0 0 1-3.5 3.5h-.8a3.5 3.5 0 0 1-3.5-3.5v-17A3.5 3.5 0 0 1 17.8 0z",
     next: "M5.1 5.2c-.55-.4-1.3 0-1.3.7v12.2c0 .7.75 1.1 1.3.7l6.9-5.3a1.45 1.45 0 0 0 0-2.3zM13.1 5.2c-.55-.4-1.3 0-1.3.7v12.2c0 .7.75 1.1 1.3.7l6.9-5.3a1.45 1.45 0 0 0 0-2.3z",
     shuffle: ICONS.shuffle,
     repeat: ICONS.repeat,
