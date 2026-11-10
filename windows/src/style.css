@@ -503,6 +503,7 @@ body {
 .music-experience-controls .music-lyrics-control.active { color:#191a20; background:rgba(255,255,255,.92); }
 .music-experience-controls .music-lyrics-control.active::before { display:none; }
 .mode-player .music-experience-info { width:min(100%,340px); justify-self:center; gap:2px; }
+.mode-player .music-experience-title,.mode-player .music-experience-artist,.mode-player .music-experience-album { text-align:center; }
 .mode-player .music-experience-title { font-size:15px; line-height:1.12; }
 .mode-player .music-experience-artist { font-size:10px; }
 .mode-player .music-experience-album { font-size:8px; }
