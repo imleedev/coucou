@@ -281,7 +281,6 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
   }, vinyl, cover, coverPlaceholder, artworkHint) as HTMLButtonElement;
   const title = h("h1", { class: "music-experience-title", text: "No media playing" });
   const artist = h("div", { class: "music-experience-artist", text: "Play music in Spotify" });
-  const album = h("div", { class: "music-experience-album" });
   const shuffle = h("button", { class: "music-small-control", title: "Shuffle", "aria-label": "Shuffle", onclick: () => void media.setting("shuffle", !media.state.shuffle).then(render) }, musicIcon("shuffle", 21));
   const previous = h("button", { class: "music-transport", title: tl("Previous track"), "aria-label": tl("Previous track"), onclick: () => void media.control("previous").then(render) }, musicIcon("previous", 29));
   const play = h("button", { class: "music-play-control", title: t("Play"), "aria-label": t("Play"), onclick: () => playPauseAndRender(render) }, musicIcon("play", 26));
@@ -304,7 +303,7 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
   const lyricsMessage = h("div", { class: "music-lyrics-message", text: "Choose Lyrics to find the words for this song." });
   const lyricsLinesEl = h("div", { class: "music-lyrics-lines" });
   const lyricsPanel = h("div", { class: "music-lyrics-panel" }, lyricsHeading, lyricsMessage, lyricsLinesEl);
-  const info = h("div", { class: "music-experience-info" }, title, artist, album, h("div", { class: "music-experience-scrubber" }, times, progressTrack), controls);
+  const info = h("div", { class: "music-experience-info" }, title, artist, h("div", { class: "music-experience-scrubber" }, times, progressTrack), controls);
   const stage = h("div", { class: "music-experience-stage mode-player" }, coverFrame, info, lyricsPanel);
   const footer = h("div", { class: "music-experience-footer" }, h("span", { text: "MPRIS · Linux" }), h("span", { text: "Synced lyrics when available" }));
   const el = h("div", { class: "music-widget music-experience" }, colorGrid, backdrop, waveA, waveB, softener, tint, h("div", { class: "music-experience-content" }, header, stage, footer));
@@ -404,8 +403,6 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
     }
     title.textContent = state.title || (state.player ? "Nothing playing" : "No Spotify playback");
     artist.textContent = state.artist || (state.player ? state.player : "Start playback in Spotify");
-    album.textContent = state.album;
-    album.hidden = !state.album;
     provider.textContent = state.player || "SPOTIFY";
     updatePalette(state.art, key);
     if (state.art && cover.src !== new URL(state.art, window.location.href).href) {
