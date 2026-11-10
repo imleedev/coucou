@@ -390,7 +390,7 @@ body {
 .music-controls button { width:22px; height:22px; display:grid; place-items:center; border:1px solid var(--hairline); border-radius:50%; background:var(--card-flat); color:var(--ink); cursor:pointer; }
 .music-progress { width:100%; height:3px; border-radius:4px; background:rgba(255,255,255,.12); overflow:hidden; }
 .music-progress i { display:block; height:100%; background:var(--green); }
-.music-times { display:flex; justify-content:space-between; color:var(--dim-3); font:8px var(--mono); }
+.music-times { display:flex; justify-content:space-between; color:var(--dim-3); font:8px var(--font); }
 .shelf-list { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; }
 .shelf-item { min-width:0; display:flex; flex-direction:column; gap:4px; border:1px solid var(--hairline); border-radius:7px; padding:4px; color:var(--dim-2); font:8px var(--font); }
 .shelf-item img { width:100%; height:35px; object-fit:cover; border-radius:4px; }
@@ -475,7 +475,7 @@ body {
 .music-experience-album { overflow:hidden; color:rgba(255,255,255,.5); font:10px var(--font); text-overflow:ellipsis; white-space:nowrap; }
 .music-experience-album[hidden] { display:none; }
 .music-experience-scrubber { margin-top:8px; }
-.music-experience-times { display:flex; justify-content:space-between; margin-bottom:5px; color:rgba(255,255,255,.58); font:9px var(--mono); font-variant-numeric:tabular-nums; }
+.music-experience-times { display:flex; justify-content:space-between; margin-bottom:5px; color:rgba(255,255,255,.58); font:9px var(--font); font-variant-numeric:tabular-nums; }
 .music-experience-progress { position:relative; height:13px; display:flex; align-items:center; cursor:pointer; }
 .music-experience-progress.disabled { opacity:.45; cursor:default; }
 .music-progress-track { position:absolute; inset:auto 0; height:3px; border-radius:5px; background:rgba(255,255,255,.24); }
