@@ -284,7 +284,7 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
   const album = h("div", { class: "music-experience-album" });
   const shuffle = h("button", { class: "music-small-control", title: "Shuffle", "aria-label": "Shuffle", onclick: () => void media.setting("shuffle", !media.state.shuffle).then(render) }, musicIcon("shuffle", 21));
   const previous = h("button", { class: "music-transport", title: tl("Previous track"), "aria-label": tl("Previous track"), onclick: () => void media.control("previous").then(render) }, musicIcon("previous", 29));
-  const play = h("button", { class: "music-play-control", title: t("Play"), "aria-label": t("Play"), onclick: () => playPauseAndRender(render) }, musicIcon("play", 32));
+  const play = h("button", { class: "music-play-control", title: t("Play"), "aria-label": t("Play"), onclick: () => playPauseAndRender(render) }, musicIcon("play", 30));
   const next = h("button", { class: "music-transport", title: tl("Next track"), "aria-label": tl("Next track"), onclick: () => void media.control("next").then(render) }, musicIcon("next", 29));
   const repeat = h("button", { class: "music-small-control", title: "Repeat", "aria-label": "Repeat", onclick: () => void media.setting("repeat", !media.state.repeat).then(render) }, musicIcon("repeat", 21));
   const transport = h("div", { class: "music-transport-cluster" }, shuffle, previous, play, next, repeat);
@@ -419,7 +419,7 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
       ? `Pause ${state.title || "current track"}${state.artist ? ` by ${state.artist}` : ""}`
       : `Play ${state.title || "current track"}${state.artist ? ` by ${state.artist}` : ""}`);
     artworkHint.replaceChildren(musicIcon(state.status === "Playing" ? "pause" : "play", 13));
-    play.replaceChildren(musicIcon(state.status === "Playing" ? "pause" : "play", 32));
+    play.replaceChildren(musicIcon(state.status === "Playing" ? "pause" : "play", 30));
     play.title = state.status === "Playing" ? t("Pause") : t("Play");
     play.setAttribute("aria-label", play.title);
     for (const button of [previous, play, next, shuffle, repeat]) button.disabled = !state.player;
