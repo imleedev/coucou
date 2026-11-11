@@ -23,7 +23,8 @@ function musicIcon(name: "previous" | "play" | "pause" | "next" | "shuffle" | "r
     repeat: ICONS.repeat,
     lyrics: "M4.5 2.5h9A2.5 2.5 0 0 1 16 5v5.5a2.5 2.5 0 0 1-2.5 2.5H8l-3.5 2.8V13A2.5 2.5 0 0 1 2 10.5V5a2.5 2.5 0 0 1 2.5-2.5zM6.3 6.7h.1m3.7 0h.1M6.5 6.8a.7.7 0 1 0 0-.1m3.7.1a.7.7 0 1 0 0-.1M7 8.2c0 1.1-.5 1.7-1.4 2m4.8-2c0 1.1-.5 1.7-1.4 2",
   } as const;
-  return svg(paths[name], size, name === "shuffle" || name === "repeat" || name === "lyrics" ? { stroke: 1.5 } : undefined);
+  const stroke = name === "shuffle" || name === "repeat" ? 2.35 : name === "lyrics" ? 1.5 : undefined;
+  return svg(paths[name], size, stroke ? { stroke } : undefined);
 }
 
 async function api<T>(path: string, method = "GET", data?: unknown): Promise<T> {
@@ -268,9 +269,9 @@ function makeImmersiveMusicDisplay(): ViewHost & { start(): void; stop(): void }
     modeButtons.set(value, button); modes.append(button);
   }
   const header = h("div", { class: "music-experience-header" }, h("div", { class: "music-source-group" }, provider), modes);
-  const cover = h("img", { class: "music-experience-cover", alt: "Album cover" }) as HTMLImageElement;
+  const cover = h("img", { class: "music-experience-cover", alt: "Album cover", draggable: "false" }) as HTMLImageElement;
   const coverPlaceholder = h("div", { class: "music-cover-placeholder", text: "♫" });
-  const vinyl = h("img", { class: "music-artwork-vinyl", src: musicVinyl, alt: "" }) as HTMLImageElement;
+  const vinyl = h("img", { class: "music-artwork-vinyl", src: musicVinyl, alt: "", draggable: "false" }) as HTMLImageElement;
   const artworkHint = h("span", { class: "music-artwork-play-hint", "aria-hidden": "true" }, musicIcon("play", 13));
   const coverFrame = h("button", {
     class: "music-cover-frame music-artwork-card",
