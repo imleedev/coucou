@@ -75,6 +75,7 @@ export const NOTCH_H = 32;
 export const COMPACT_W = NOTCH_W;
 export const EXPANDED_W = 640;
 export const MUSIC_EXPANDED_W = 704;
+export const OVERVIEW_EXPANDED_W = 704;
 
 export const ROUNDED_CORNER = 14; // hidden / compact
 export const EXPANDED_CORNER = 22;
@@ -84,7 +85,7 @@ export const WAKE_STRIP_W = 240;
 export const WAKE_STRIP_H = 6;
 
 export const VIEW_LAYOUTS: Record<IslandViewName, ViewLayout> = {
-  overview: { height: 160, botX: 68, botY: null, botDiameter: 58, agentMode: "pills" },
+  overview: { height: 184, botX: 692, botY: 208, botDiameter: 30, agentMode: "pills" },
   empty: { height: 160, botX: 70, botY: null, botDiameter: 62, agentMode: "none" },
   approval: { height: 160, botX: 62, botY: null, botDiameter: 56, agentMode: "column" },
   question: { height: 160, botX: 62, botY: null, botDiameter: 56, agentMode: "column" },
@@ -153,7 +154,7 @@ export function islandSize(
       return { w: COMPACT_W, h: NOTCH_H };
     case "expanded": {
       const h = view === "prompt" ? chatPromptHeight(chatCount) : VIEW_LAYOUTS[view].height;
-      return { w: view === "music" ? MUSIC_EXPANDED_W : EXPANDED_W, h };
+      return { w: view === "music" ? MUSIC_EXPANDED_W : view === "overview" ? OVERVIEW_EXPANDED_W : EXPANDED_W, h };
     }
   }
 }

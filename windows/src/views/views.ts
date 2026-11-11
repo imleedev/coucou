@@ -309,6 +309,27 @@ export function buildHeader(actions: ViewActions): ViewHost {
 
 // ── Overview ──────────────────────────────────────────────────────────────────
 
+function buildHomeCalendar(): HTMLElement {
+  const now = new Date();
+  const month = h("strong", { class: "home-calendar-month", text: new Intl.DateTimeFormat(undefined, { month: "short" }).format(now) });
+  const week = h("div", { class: "home-calendar-week" });
+  const monday = (now.getDay() + 6) % 7;
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - monday);
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+    const today = date.toDateString() === now.toDateString();
+    week.append(h("div", { class: `home-calendar-day${today ? " today" : ""}` },
+      h("span", { text: new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(date) }),
+      h("strong", { text: String(date.getDate()) }),
+      today ? h("i", { "aria-hidden": "true" }) : null,
+    ));
+  }
+  return h("section", { class: "home-calendar" },
+    h("div", { class: "home-calendar-top" }, month, week),
+    h("div", { class: "home-calendar-empty" }, svg(ICONS.calendar, 18), h("span", { text: "Nothing for today" })),
+  );
+}
+
 function buildOverview(actions: ViewActions): ViewHost {
   /** The diff open in the left card (a FileDiff id), as activeDiffId on macOS. */
   let activeDiffId: number | null = null;
@@ -333,8 +354,7 @@ function buildOverview(actions: ViewActions): ViewHost {
   const left = card(null, leftBody, jump);
   const pills = h("div", { class: "pills" });
   const musicWidget = buildMusicWidget();
-  musicWidget.el.classList.add("overview-music-widget");
-  let selectedWidget = 0;
+  let selectedWidget = 1;
   const widgetPrev = h("button", { class: "widget-arrow previous", title: "Previous widget", text: "<", onclick: (e: Event) => { e.stopPropagation(); changeWidget(0, -1); } });
   const widgetNext = h("button", { class: "widget-arrow next", title: "Next widget", text: ">", onclick: (e: Event) => { e.stopPropagation(); changeWidget(1, 1); } });
   const right = card(null, pills, musicWidget.el, widgetPrev, widgetNext);
@@ -401,8 +421,19 @@ function buildOverview(actions: ViewActions): ViewHost {
   });
 
   const el = h("div", { class: "view overview" },
-    h("div", { class: "left" }, left),
-    h("div", { class: "right" }, right),
+    h("div", { class: "home-dashboard" },
+      h("div", { class: "home-dashboard-nav" },
+        h("button", { class: "home-nav-selected", "aria-current": "page" }, svg(ICONS.house, 16), h("span", { text: "Nook" })),
+        h("button", { class: "home-nav-secondary", onclick: () => actions.setView("shelf") }, svg(ICONS.folder, 16), h("span", { text: "Tray" })),
+        h("button", { class: "home-nav-settings", title: tl("Settings"), "aria-label": tl("Settings"), onclick: () => actions.setView("settings") }, svg(ICONS.gear, 16)),
+      ),
+      h("div", { class: "home-dashboard-main" },
+        h("section", { class: "home-music" }, musicWidget.el),
+        h("div", { class: "home-divider" }),
+        buildHomeCalendar(),
+      ),
+      h("div", { class: "home-dashboard-legacy", "aria-hidden": "true" }, h("div", { class: "left" }, left), h("div", { class: "right" }, right)),
+    ),
   );
 
   let pillIds = "";

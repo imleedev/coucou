@@ -798,10 +798,46 @@ body {
 /* ── Overview ───────────────────────────────────────────────────────────── */
 
 .overview {
-  display: flex;
-  gap: 10px;
+  display: block;
   height: 100%;
 }
+
+.home-dashboard {
+  height:100%;
+  padding:3px 12px 10px;
+  border-radius:0 0 18px 18px;
+  background:#000;
+  color:var(--ink);
+}
+.home-dashboard-nav { height:39px; display:flex; align-items:flex-start; gap:7px; }
+.home-dashboard-nav button { height:30px; display:flex; align-items:center; gap:8px; padding:0 12px; border:0; border-radius:18px; background:transparent; color:#a4a4a8; font:600 14px var(--font); cursor:pointer; }
+.home-dashboard-nav button:hover { color:#fff; background:rgba(255,255,255,.08); }
+.home-dashboard-nav .home-nav-selected { background:#111; color:#d7d7da; }
+.home-dashboard-nav .home-nav-settings { margin-left:auto; width:30px; justify-content:center; padding:0; }
+.home-dashboard-main { height:calc(100% - 39px); display:grid; grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr); align-items:stretch; gap:12px; }
+.home-divider { width:1px; height:100%; background:rgba(255,255,255,.09); }
+.home-dashboard-legacy { display:none; }
+.home-music { min-width:0; display:flex; align-items:center; }
+.home-music .music-widget { width:100%; height:100%; display:grid; grid-template-columns:112px minmax(0,1fr); grid-template-rows:minmax(0,1fr) 24px; column-gap:14px; row-gap:1px; padding:0 5px 0 3px; color:#a6a6aa; }
+.home-music .music-art { grid-column:1; grid-row:1 / span 2; width:112px; height:112px; border-radius:20px; background:#161616; }
+.home-music .music-meta { grid-column:2; grid-row:1; align-self:end; gap:4px; padding-bottom:4px; }
+.home-music .music-title { font:700 17px var(--font); color:#f3f3f4; }
+.home-music .music-artist { font:600 14px var(--font); color:#aaa; }
+.home-music .music-progress,.home-music .music-times { display:none; }
+.home-music .music-controls { grid-column:2; grid-row:2; justify-content:flex-start; gap:18px; }
+.home-music .music-controls button { width:22px; height:22px; border:0; background:transparent; color:#aaa; }
+.home-music .music-controls button:hover { color:#fff; }
+.home-calendar { min-width:0; display:flex; flex-direction:column; justify-content:center; padding:0 5px 0 1px; }
+.home-calendar-top { display:flex; align-items:flex-start; gap:14px; }
+.home-calendar-month { width:58px; flex:0 0 58px; padding-top:5px; color:#f2f2f3; font:700 31px/1 var(--display-font); letter-spacing:-.06em; }
+.home-calendar-week { min-width:0; flex:1; display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); }
+.home-calendar-day { position:relative; display:flex; min-width:0; flex-direction:column; align-items:center; gap:4px; color:#77787d; font:600 11px var(--font); }
+.home-calendar-day strong { color:#b8b8bc; font:700 17px var(--font); }
+.home-calendar-day.today { color:#e7e7e9; }
+.home-calendar-day.today strong { color:#1684ff; font-size:23px; }
+.home-calendar-day i { position:absolute; bottom:-8px; width:4px; height:4px; border-radius:50%; background:#1684ff; }
+.home-calendar-empty { display:flex; flex-direction:column; align-items:center; gap:7px; margin-top:30px; color:#77787d; font:600 15px var(--font); }
+.home-calendar-empty svg { color:#7a7b80; }
 
 .overview > .left {
   flex: 0 0 322px;
