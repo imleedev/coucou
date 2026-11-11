@@ -77,6 +77,9 @@ class FakeElement {
     return { left: 0, top: 0, width: 0, height: 0, right: 0, bottom: 0 };
   }
   setPointerCapture() {}
+  scrollTo() {}
+  getAnimations() { return []; }
+  animate() { return { finished: Promise.resolve(), cancel() {} }; }
   addEventListener(type, fn) {
     this.listeners.set(type, [...(this.listeners.get(type) ?? []), fn]);
   }
@@ -147,12 +150,16 @@ class FakeElement {
 
 export function installFakeDom() {
   globalThis.requestAnimationFrame = (fn) => fn();
+  const documentListeners = new Map();
   globalThis.document = {
     createElement: (tag) => new FakeElement(tag),
     createElementNS: (ns, tag) => new FakeElement(tag, ns),
     createTextNode: (text) => new FakeText(text),
     body: new FakeElement("body"),
+    addEventListener: (type, fn) => documentListeners.set(type, [...(documentListeners.get(type) ?? []), fn]),
+    removeEventListener: (type, fn) => documentListeners.set(type, (documentListeners.get(type) ?? []).filter((item) => item !== fn)),
   };
+  globalThis.matchMedia ??= () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
   const listeners = new Map();
   globalThis.addEventListener = (type, fn) => listeners.set(type, [...(listeners.get(type) ?? []), fn]);
   globalThis.removeEventListener = (type, fn) => listeners.set(type, (listeners.get(type) ?? []).filter((item) => item !== fn));

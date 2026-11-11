@@ -7360,6 +7360,18 @@
     "Calendar": {
       "zh-Hans": "日历", "hi": "कैलेंडर", "es": "Calendario", "ar": "التقويم", "fr": "Calendrier", "bn": "ক্যালেন্ডার", "pt-BR": "Calendário", "ru": "Календарь", "id": "Kalender", "de": "Kalender", "tr": "Takvim", "ko": "캘린더", "ja": "カレンダー"
     },
+    "Next month": {
+      "zh-Hans": "下个月", "hi": "अगला महीना", "es": "Mes siguiente", "ar": "الشهر التالي", "fr": "Mois suivant", "bn": "পরের মাস", "pt-BR": "Próximo mês", "ru": "Следующий месяц", "id": "Bulan berikutnya", "de": "Nächster Monat", "tr": "Sonraki ay", "ko": "다음 달", "ja": "次の月"
+    },
+    "No events": {
+      "zh-Hans": "没有活动", "hi": "कोई कार्यक्रम नहीं", "es": "No hay eventos", "ar": "لا توجد أحداث", "fr": "Aucun événement", "bn": "কোনো ইভেন্ট নেই", "pt-BR": "Sem eventos", "ru": "Нет событий", "id": "Tidak ada acara", "de": "Keine Ereignisse", "tr": "Etkinlik yok", "ko": "일정 없음", "ja": "予定はありません"
+    },
+    "Nothing for today": {
+      "zh-Hans": "今天没有安排", "hi": "आज के लिए कुछ नहीं", "es": "Nada para hoy", "ar": "لا شيء لهذا اليوم", "fr": "Rien pour aujourd’hui", "bn": "আজকের জন্য কিছু নেই", "pt-BR": "Nada para hoje", "ru": "На сегодня ничего нет", "id": "Tidak ada untuk hari ini", "de": "Für heute nichts geplant", "tr": "Bugün için bir şey yok", "ko": "오늘은 일정이 없습니다", "ja": "今日は予定がありません"
+    },
+    "Previous month": {
+      "zh-Hans": "上个月", "hi": "पिछला महीना", "es": "Mes anterior", "ar": "الشهر السابق", "fr": "Mois précédent", "bn": "আগের মাস", "pt-BR": "Mês anterior", "ru": "Предыдущий месяц", "id": "Bulan sebelumnya", "de": "Vorheriger Monat", "tr": "Önceki ay", "ko": "이전 달", "ja": "前の月"
+    },
     "Shelf": {
       "zh-Hans": "收纳架", "hi": "शेल्फ़", "es": "Estante", "ar": "الرف", "fr": "Étagère", "bn": "শেলফ", "pt-BR": "Prateleira", "ru": "Полка", "id": "Rak", "de": "Ablage", "tr": "Raf", "ko": "보관함", "ja": "シェルフ"
     },

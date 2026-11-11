@@ -6,7 +6,7 @@ import { installFakeDom } from "./fakedom.mjs";
 
 installFakeDom();
 const { buildHeader, buildViews } = await import("../src/views/views.ts");
-const { arrangeMusicPalette, buildMusicView, dominantColors, parseTimedLyrics } = await import("../src/views/workspace.ts");
+const { arrangeMusicPalette, buildHomeCalendarView, buildMusicView, dominantColors, parseTimedLyrics } = await import("../src/views/workspace.ts");
 const { botPosition, islandSize } = await import("../src/core/layout.ts");
 const { State, DEFAULT_SETTINGS } = await import("../src/core/state.ts");
 State.settings = { ...DEFAULT_SETTINGS };
@@ -23,27 +23,45 @@ const actions = new Proxy({}, {
 test("new top-level tabs are registered in the existing navigation", () => {
   const header = buildHeader(actions);
   const tabs = header.el.querySelector(".tabs").find("button");
-  assert.equal(tabs.length, 9);
+  assert.equal(tabs.length, 13);
   for (const tab of tabs) tab.fire("click");
-  assert.deepEqual(selected, ["overview", "prompt", "upload", "wallpapers", "music", "calendar", "shelf", "system", "camera"]);
+  assert.deepEqual(selected, ["overview", "prompt", "upload", "wallpapers", "music", "calendar", "shelf", "system", "camera", "apps", "devices", "tools", "workspace"]);
 });
 
-test("widget arrows switch the overview panel independently of page navigation", () => {
+test("Home keeps a full player and interactive calendar in the expanded panel", () => {
   const views = buildViews(actions, () => {});
   for (const name of ["music", "calendar", "shelf", "system", "camera"]) assert.ok(views.has(name), `${name} tab is registered`);
   const overview = views.get("overview");
-  const arrows = overview.el.find(".widget-arrow");
-  const agents = overview.el.querySelector(".pills");
-  const music = overview.el.querySelector(".overview-music-widget");
-  assert.equal(agents.hidden, false);
-  assert.equal(music.hidden, true);
-  arrows[1].fire("click");
-  assert.equal(agents.hidden, true);
-  assert.equal(music.hidden, false);
-  arrows[0].fire("click");
-  assert.equal(agents.hidden, false);
-  assert.equal(music.hidden, true);
+  assert.ok(overview.el.querySelector(".home-music"));
+  assert.ok(overview.el.querySelector(".home-divider"));
+  assert.ok(overview.el.querySelector(".home-calendar"));
+  for (const selector of [".music-art-frame", ".music-title", ".music-album", ".music-artist", ".music-controls"]) {
+    assert.ok(overview.el.querySelector(selector), `Home music includes ${selector}`);
+  }
+  assert.equal(overview.el.find(".home-calendar-nav").length, 2, "the compact calendar can move between months");
+  assert.deepEqual(islandSize("expanded", "overview"), { w: 704, h: 194 });
   globalThis.dispatchEvent({ type: "ax-island-view", detail: "music" });
+});
+
+test("Home calendar reads and shows events from the full calendar store", () => {
+  const entries = new Map();
+  globalThis.localStorage = {
+    getItem: (key) => entries.get(key) ?? null,
+    setItem: (key, value) => entries.set(key, String(value)),
+  };
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  entries.set("coucou.calendar.events.v1", JSON.stringify([{ id: "today", date: today, title: "Design review" }]));
+  const calendar = buildHomeCalendarView();
+  assert.equal(calendar.find(".home-calendar-day").length, 7);
+  assert.equal(calendar.querySelector(".home-calendar-events").textContent, "Design review");
+  const month = calendar.querySelector(".home-calendar-month");
+  const currentMonth = month.textContent;
+  calendar.find(".home-calendar-nav")[0].fire("click");
+  assert.notEqual(month.textContent, currentMonth, "previous month navigation updates the heading");
+  calendar.find(".home-calendar-nav")[1].fire("click");
+  assert.equal(month.textContent, currentMonth, "next month navigation returns to the current month");
+  globalThis.localStorage = undefined;
 });
 
 test("timed lyrics parse centiseconds, repeated timestamps and stay ordered", () => {
@@ -91,7 +109,7 @@ test("the Music tab exposes player, artwork, lyrics and split presentations", ()
 
 test("Music moves Mochi into the clear upper-right header space", () => {
   const p = botPosition("expanded", "music", 288);
-  assert.deepEqual({ x: p.cx, y: p.cy, diameter: p.diameter }, { x: 534, y: 24, diameter: 38 });
+  assert.deepEqual({ x: p.cx, y: p.cy, diameter: p.diameter }, { x: 538, y: 32, diameter: 38 });
   assert.deepEqual(islandSize("expanded", "music"), { w: 704, h: 288 }, "only the Music view uses its wider, shorter layout");
 });
 
@@ -117,8 +135,8 @@ test("Music lyrics stay inside a bounded, scrollable viewport and reclaim the Mo
   assert.match(css, /\.mode-player \.music-artwork-card\s*\{[^}]*translateX\(52px\)/);
   assert.match(css, /\.music-artwork-vinyl\s*\{[^}]*left:-55%;[^}]*width:110%/);
   assert.match(css, /\.music-artwork-card\.is-playing \.music-artwork-vinyl\s*\{[^}]*opacity:\.92;[^}]*animation:music-artwork-spin/);
-  assert.match(css, /\.music-experience-controls \.music-transport-cluster\s*\{[^}]*gap:8px/);
-  assert.match(css, /\.mode-player \.music-experience-controls \.music-play-control\s*\{[^}]*width:28px/);
+  assert.match(css, /\.music-experience-controls \.music-transport-cluster\s*\{[^}]*gap:0/);
+  assert.match(css, /\.music-experience-controls \.music-play-control\s*\{[^}]*width:42px/);
   assert.match(css, /\.music-experience\s*\{[^}]*border-radius:16px/s);
   assert.doesNotMatch(css, /\.music-page-view/);
   assert.doesNotMatch(css, /\.mode-lyrics \.music-experience-controls/);

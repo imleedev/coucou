@@ -1,7 +1,7 @@
 import { h, clear, svg } from "./dom";
 import { ICONS } from "./icons";
 import { Bridge, IS_TAURI } from "../core/bridge";
-import { t, tl } from "../i18n/i18n";
+import { language, onLanguageChange, t, tl } from "../i18n/i18n";
 import type { ViewHost } from "./views";
 
 const musicVinyl = new URL("../assets/music-vinyl.png", import.meta.url).href;
@@ -195,34 +195,40 @@ function parseLyricsResult(value: { syncedLyrics?: string; plainLyrics?: string;
 
 function makeMusicDisplay(compact: boolean) {
   if (!compact) return makeImmersiveMusicDisplay();
-  const art = h("img", { class: "music-art", alt: "Album cover" }) as HTMLImageElement;
+  const art = h("img", { class: "music-art", alt: "Album cover", draggable: "false" }) as HTMLImageElement;
+  const artFrame = h("div", { class: "music-art-frame" }, art);
   const title = h("strong", { class: "music-title", text: "No media playing" });
-  const artist = h("span", { class: "music-artist", text: "Start playback in any MPRIS player" });
+  const album = h("span", { class: "music-album" });
+  const artist = h("span", { class: "music-artist", text: "Start playback in Spotify" });
   const fill = h("i");
   const progress = h("div", { class: "music-progress" }, fill);
   const elapsed = h("span", { text: "0:00" });
   const duration = h("span", { text: "0:00" });
   const times = h("div", { class: "music-times" }, elapsed, duration);
   const controls = h("div", { class: "music-controls" });
-  const prev = h("button", { title: tl("Previous track"), onclick: () => void media.control("previous").then(render) }, svg(ICONS.backward, 11));
-  const toggle = h("button", { title: t("Play"), onclick: () => playPauseAndRender(render) }, svg(ICONS.play, 11));
-  const next = h("button", { title: tl("Next track"), onclick: () => void media.control("next").then(render) }, svg(ICONS.forward, 11));
+  const prev = h("button", { title: tl("Previous track"), "aria-label": tl("Previous track"), onclick: () => void media.control("previous").then(render) }, svg(ICONS.backward, 14));
+  const toggle = h("button", { title: t("Play"), "aria-label": t("Play"), onclick: () => playPauseAndRender(render) }, svg(ICONS.play, 14));
+  const next = h("button", { title: tl("Next track"), "aria-label": tl("Next track"), onclick: () => void media.control("next").then(render) }, svg(ICONS.forward, 14));
   controls.append(prev, toggle, next);
-  const meta = h("div", { class: "music-meta" }, title, artist, progress, times);
-  const el = h("div", { class: `music-widget${compact ? " compact" : ""}` }, art, meta, controls);
+  const meta = h("div", { class: "music-meta" }, title, album, artist, progress, times);
+  const el = h("div", { class: `music-widget${compact ? " compact" : ""}` }, artFrame, meta, controls);
   let lastArt = "";
   function render() {
     const s = media.state;
     title.textContent = s.title || (s.player ? "Nothing playing" : "No media player found");
-    artist.textContent = s.player ? [s.artist, s.player].filter(Boolean).join(" · ") : "Start playback in any MPRIS player";
+    artist.textContent = s.artist || (s.player ? s.player : "Start playback in Spotify");
+    album.textContent = s.album;
+    album.hidden = !s.album;
     if (s.art && s.art !== lastArt) { lastArt = s.art; art.src = s.art; }
     art.hidden = !s.art;
+    artFrame.hidden = !s.art;
     const fraction = s.duration > 0 ? Math.max(0, Math.min(1, s.position / s.duration)) : 0;
     fill.style.width = `${fraction * 100}%`;
     elapsed.textContent = time(s.position); duration.textContent = time(s.duration);
     progress.hidden = !s.duration; times.hidden = !s.duration;
-    toggle.replaceChildren(svg(s.status === "Playing" ? ICONS.pause : ICONS.play, 11));
+    toggle.replaceChildren(svg(s.status === "Playing" ? ICONS.pause : ICONS.play, 14));
     toggle.title = s.status === "Playing" ? t("Pause") : t("Play");
+    toggle.setAttribute("aria-label", toggle.title);
     for (const button of [prev, toggle, next]) button.disabled = !s.player;
   }
   let refreshTimer: number | null = null;
@@ -516,7 +522,70 @@ function readEvents(): EventItem[] {
   try { const value = JSON.parse(localStorage.getItem(EVENTS_KEY) || "[]"); return Array.isArray(value) ? value.filter((x) => x && typeof x.id === "string" && /^\d{4}-\d{2}-\d{2}$/.test(x.date) && typeof x.title === "string") : []; }
   catch { return []; }
 }
-function writeEvents(events: EventItem[]) { try { localStorage.setItem(EVENTS_KEY, JSON.stringify(events)); } catch { /* private mode/quota: keep this session usable */ } }
+function writeEvents(events: EventItem[]) {
+  try { localStorage.setItem(EVENTS_KEY, JSON.stringify(events)); } catch { /* private mode/quota: keep this session usable */ }
+  window.dispatchEvent(new Event("coucou-calendar-events-changed"));
+}
+
+/** Compact, interactive week summary used by the Home dashboard. Shares the calendar's event store. */
+export function buildHomeCalendarView(): HTMLElement {
+  let selectedDate = localDate(new Date());
+  let shownMonth = new Date();
+  const month = h("strong", { class: "home-calendar-month" });
+  const week = h("div", { class: "home-calendar-week" });
+  const eventList = h("div", { class: "home-calendar-events" });
+  const previous = h("button", { class: "home-calendar-nav", text: "‹", title: tl("Previous month"), "aria-label": tl("Previous month"), onclick: () => shiftMonth(-1) });
+  const next = h("button", { class: "home-calendar-nav", text: "›", title: tl("Next month"), "aria-label": tl("Next month"), onclick: () => shiftMonth(1) });
+
+  function shiftMonth(delta: number) {
+    shownMonth = new Date(shownMonth.getFullYear(), shownMonth.getMonth() + delta, 1);
+    selectedDate = localDate(shownMonth);
+    render();
+  }
+  function render() {
+    month.textContent = new Intl.DateTimeFormat(language(), { month: "short" }).format(shownMonth);
+    const selected = new Date(`${selectedDate}T12:00:00`);
+    const monday = (selected.getDay() + 6) % 7;
+    const start = new Date(selected.getFullYear(), selected.getMonth(), selected.getDate() - monday);
+    const events = readEvents();
+    const datesWithEvents = new Set(events.map((event) => event.date));
+    clear(week);
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      const key = localDate(date);
+      const today = key === localDate(new Date());
+      const day = h("button", {
+        class: `home-calendar-day${today ? " today" : ""}${key === selectedDate ? " selected" : ""}${datesWithEvents.has(key) ? " has-event" : ""}`,
+        "aria-label": new Intl.DateTimeFormat(language(), { dateStyle: "full" }).format(date),
+        "aria-pressed": key === selectedDate,
+        onclick: () => { selectedDate = key; shownMonth = new Date(date.getFullYear(), date.getMonth(), 1); render(); },
+      },
+        h("span", { text: new Intl.DateTimeFormat(language(), { weekday: "short" }).format(date) }),
+        h("strong", { text: String(date.getDate()) }),
+        datesWithEvents.has(key) ? h("i", { "aria-hidden": "true" }) : null,
+      );
+      week.append(day);
+    }
+    clear(eventList);
+    const todaysEvents = events.filter((event) => event.date === selectedDate);
+    if (todaysEvents.length) {
+      for (const event of todaysEvents.slice(0, 2)) eventList.append(h("div", { class: "home-calendar-event", title: event.title, text: event.title }));
+      if (todaysEvents.length > 2) eventList.append(h("span", { class: "home-calendar-more", text: `+${todaysEvents.length - 2} more` }));
+    } else {
+      eventList.append(svg(ICONS.calendar, 18), h("span", { text: selectedDate === localDate(new Date()) ? tl("Nothing for today") : tl("No events") }));
+    }
+  }
+  const el = h("section", { class: "home-calendar", "aria-label": tl("Calendar") },
+    h("div", { class: "home-calendar-top" }, h("div", { class: "home-calendar-month-group" }, previous, month, next), week),
+    eventList,
+  );
+  window.addEventListener("storage", (event) => { if (event.key === EVENTS_KEY) render(); });
+  window.addEventListener("coucou-calendar-events-changed", render);
+  onLanguageChange(render);
+  render();
+  return el;
+}
+
 function parseIcs(text: string): EventItem[] {
   const unfolded = text.replace(/\r?\n[ \t]/g, "");
   return [...unfolded.matchAll(/BEGIN:VEVENT([\s\S]*?)END:VEVENT/g)].flatMap(([, block]) => {
@@ -567,8 +636,8 @@ export function buildCalendarView(): ViewHost {
     else for (const event of upcoming) eventList.append(h("div", { class: "workspace-row" }, h("span", { text: event.date }), h("span", { text: event.title }), h("span", { style: "flex:1" }), h("button", { text: "×", title: "Delete event", onclick: () => { writeEvents(readEvents().filter((item) => item.id !== event.id)); render(); } })));
   }
   render();
-  const previousMonth = h("button", { text: "‹", title: "Previous month", onclick: () => { shownMonth = new Date(shownMonth.getFullYear(), shownMonth.getMonth() - 1, 1); render(); } });
-  const nextMonth = h("button", { text: "›", title: "Next month", onclick: () => { shownMonth = new Date(shownMonth.getFullYear(), shownMonth.getMonth() + 1, 1); render(); } });
+  const previousMonth = h("button", { text: "‹", title: tl("Previous month"), onclick: () => { shownMonth = new Date(shownMonth.getFullYear(), shownMonth.getMonth() - 1, 1); render(); } });
+  const nextMonth = h("button", { text: "›", title: tl("Next month"), onclick: () => { shownMonth = new Date(shownMonth.getFullYear(), shownMonth.getMonth() + 1, 1); render(); } });
   const actions = h("div", { class: "workspace-actions" }, dateInput, titleInput, add,
     h("button", { text: "Import .ics", onclick: () => importInput.click() }), exportButton, importInput);
   const el = h("div", { class: "view" }, h("div", { class: "card" }, h("div", { class: "workspace-panel" },
